@@ -10,6 +10,7 @@
     "seed": "node ./prisma/seed.js"
   },
   "scripts": {
+    "deploy": "rsync -chavz ./ root@114.55.134.120:/linkwarden2",
     "dev": "concurrently -k \"next dev\" \"yarn worker:dev\"",
     "worker:dev": "nodemon --skip-project scripts/worker.ts",
     "worker:prod": "ts-node --transpile-only --skip-project scripts/worker.ts",

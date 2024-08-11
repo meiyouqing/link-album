@@ -2,6 +2,7 @@ const { S3 } = require("@aws-sdk/client-s3");
 const { PrismaClient } = require("@prisma/client");
 const { existsSync } = require("fs");
 const util = require("util");
+require("dotenv").config();
 
 const prisma = new PrismaClient();
 
