@@ -10,7 +10,12 @@
     "seed": "node ./prisma/seed.js"
   },
   "scripts": {
-    "deploy": "rsync -chavz ./ root@114.55.134.120:/linkwarden2",
+    "deploy": "rsync -chavz ./.next/ root@114.55.134.120:/myprojects/linkwarden/.next",
+    "dpublic": "rsync -chavz ./public/ root@114.55.134.120:/myprojects/linkwarden/public",
+    "dpackage": "rsync -chavz ./package.json root@114.55.134.120:/myprojects/linkwarden/package.json",
+    "dylock": "rsync -chavz ./yarn.lock root@114.55.134.120:/myprojects/linkwarden/yarn.lock",
+    "dscript": "rsync -chavz ./prisma/ root@114.55.134.120:/myprojects/linkwarden/prisma",
+    
     "dev": "concurrently -k \"next dev\" \"yarn worker:dev\"",
     "worker:dev": "nodemon --skip-project scripts/worker.ts",
     "worker:prod": "ts-node --transpile-only --skip-project scripts/worker.ts",
