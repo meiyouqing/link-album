@@ -278,7 +278,7 @@ export default function Dashboard() {
           {links.some((e) => e.pinnedBy && e.pinnedBy[0]) ? (
             <div className="w-full">
               <div
-                className={`grid min-[1900px]:grid-cols-4 xl:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-5 w-full`}
+                className={`grid min-[1900px]:grid-cols-5 xl:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-5 w-full`}
               >
                 {links
                   .filter((e) => e.pinnedBy && e.pinnedBy[0])

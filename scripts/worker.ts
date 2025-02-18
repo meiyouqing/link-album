@@ -175,6 +175,10 @@ function delay(sec: number) {
 }
 
 async function init() {
+  // Debug log for terminal last command arguments
+  if (args) {
+    console.debug("Terminal last command:", args);
+  }
   console.log("\x1b[34m%s\x1b[0m", "Starting the link processing task");
   while (true) {
     try {
