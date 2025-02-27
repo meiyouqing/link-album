@@ -1,24 +1,33 @@
-import useTagStore from "@/store/tags";
 import { useEffect, useState } from "react";
 import CreatableSelect from "react-select/creatable";
 import { styles } from "./styles";
 import { Options } from "./types";
+import { useTags } from "@/hooks/store/tags";
+import { useTranslation } from "next-i18next";
 
 type Props = {
   onChange: any;
   defaultValue?: {
-    value: number;
+    value?: number;
     label: string;
   }[];
+  autoFocus?: boolean;
+  onBlur?: any;
 };
 
-export default function TagSelection({ onChange, defaultValue }: Props) {
-  const { tags } = useTagStore();
+export default function TagSelection({
+  onChange,
+  defaultValue,
+  autoFocus,
+  onBlur,
+}: Props) {
+  const { data: tags = [] } = useTags();
+  const { t } = useTranslation();
 
   const [options, setOptions] = useState<Options[]>([]);
 
   useEffect(() => {
-    const formatedCollections = tags.map((e) => {
+    const formatedCollections = tags.map((e: any) => {
       return { value: e.id, label: e.name };
     });
 
@@ -34,8 +43,10 @@ export default function TagSelection({ onChange, defaultValue }: Props) {
       options={options}
       styles={styles}
       defaultValue={defaultValue}
-      // menuPosition="fixed"
+      placeholder={t("tag_selection_placeholder")}
       isMulti
+      autoFocus={autoFocus}
+      onBlur={onBlur}
     />
   );
 }

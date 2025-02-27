@@ -7,15 +7,22 @@ type OptionalExcluding<T, TRequired extends keyof T> = Partial<T> &
 export interface LinkIncludingShortenedCollectionAndTags
   extends Omit<
     Link,
-    "id" | "createdAt" | "collectionId" | "updatedAt" | "lastPreserved"
+    | "id"
+    | "createdAt"
+    | "collectionId"
+    | "updatedAt"
+    | "lastPreserved"
+    | "importDate"
   > {
   id?: number;
   createdAt?: string;
+  importDate?: string;
   collectionId?: number;
   tags: Tag[];
   pinnedBy?: {
     id: number;
   }[];
+  updatedAt?: string;
   collection: OptionalExcluding<Collection, "name" | "ownerId">;
 }
 
@@ -25,7 +32,7 @@ export interface Member {
   canCreate: boolean;
   canUpdate: boolean;
   canDelete: boolean;
-  user: OptionalExcluding<User, "username" | "name" | "id">;
+  user: OptionalExcluding<User, "email" | "username" | "name" | "id">;
 }
 
 export interface CollectionIncludingMembersAndLinkCount
@@ -33,6 +40,7 @@ export interface CollectionIncludingMembersAndLinkCount
   id?: number;
   ownerId?: number;
   createdAt?: string;
+  updatedAt?: string;
   _count?: { links: number };
   members: Member[];
 }
@@ -43,6 +51,7 @@ export interface TagIncludingLinkCount extends Tag {
 
 export interface AccountSettings extends User {
   newPassword?: string;
+  oldPassword?: string;
   whitelistedUsers: string[];
   subscription?: {
     active?: boolean;
@@ -59,8 +68,8 @@ export interface PublicCollectionIncludingLinks extends Collection {
 
 export enum ViewMode {
   Card = "card",
-  Grid = "grid",
   List = "list",
+  Masonry = "masonry",
 }
 
 export enum Sort {
@@ -72,8 +81,10 @@ export enum Sort {
   DescriptionZA,
 }
 
+export type Order = { [key: string]: "asc" | "desc" };
+
 export type LinkRequestQuery = {
-  sort: Sort;
+  sort?: Sort;
   cursor?: number;
   collectionId?: number;
   tagId?: number;
@@ -97,6 +108,7 @@ interface CollectionIncludingLinks extends Collection {
 
 export interface Backup extends Omit<User, "password" | "id"> {
   collections: CollectionIncludingLinks[];
+  pinnedLinks: LinksIncludingTags[];
 }
 
 export type MigrationRequest = {
@@ -107,6 +119,8 @@ export type MigrationRequest = {
 export enum MigrationFormat {
   linkwarden,
   htmlFile,
+  wallabag,
+  omnivore,
 }
 
 export enum Plan {
@@ -127,10 +141,20 @@ export enum ArchivedFormat {
   jpeg,
   pdf,
   readability,
+  monolith,
 }
 
 export enum LinkType {
   url,
   pdf,
   image,
+  monolith,
+}
+
+export enum TokenExpiry {
+  sevenDays,
+  oneMonth,
+  twoMonths,
+  threeMonths,
+  never,
 }

@@ -1,33 +1,37 @@
-import useLinkStore from "@/store/links";
-import useCollectionStore from "@/store/collections";
-import useTagStore from "@/store/tags";
 import MainLayout from "@/layouts/MainLayout";
-import LinkCard from "@/components/LinkViews/LinkCard";
-import { useEffect, useState } from "react";
-import useLinks from "@/hooks/useLinks";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import useWindowDimensions from "@/hooks/useWindowDimensions";
 import React from "react";
 import { toast } from "react-hot-toast";
-import { MigrationFormat, MigrationRequest, ViewMode } from "@/types/global";
+import { ViewMode } from "@/types/global";
 import DashboardItem from "@/components/DashboardItem";
 import NewLinkModal from "@/components/ModalContent/NewLinkModal";
 import PageHeader from "@/components/PageHeader";
-import CardView from "@/components/LinkViews/Layouts/CardView";
-import ListView from "@/components/LinkViews/Layouts/ListView";
 import ViewDropdown from "@/components/ViewDropdown";
-// import GridView from "@/components/LinkViews/Layouts/GridView";
+import getServerSideProps from "@/lib/client/getServerSideProps";
+import { useTranslation } from "next-i18next";
+import { useCollections } from "@/hooks/store/collections";
+import { useTags } from "@/hooks/store/tags";
+import { useDashboardData } from "@/hooks/store/dashboardData";
+import Links from "@/components/LinkViews/Links";
+import useLocalSettingsStore from "@/store/localSettings";
+import { useUpdateUser, useUser } from "@/hooks/store/user";
+import SurveyModal from "@/components/ModalContent/SurveyModal";
+import ImportDropdown from "@/components/ImportDropdown";
 
 export default function Dashboard() {
-  const { collections } = useCollectionStore();
-  const { links } = useLinkStore();
-  const { tags } = useTagStore();
+  const { t } = useTranslation();
+  const { data: collections = [] } = useCollections();
+  const {
+    data: { links = [], numberOfPinnedLinks } = { links: [] },
+    ...dashboardData
+  } = useDashboardData();
+  const { data: tags = [] } = useTags();
+  const { data: account = [] } = useUser();
 
   const [numberOfLinks, setNumberOfLinks] = useState(0);
 
-  const [showLinks, setShowLinks] = useState(3);
-
-  useLinks({ pinnedOnly: true, sort: 0 });
+  const { settings } = useLocalSettingsStore();
 
   useEffect(() => {
     setNumberOfLinks(
@@ -39,73 +43,81 @@ export default function Dashboard() {
     );
   }, [collections]);
 
-  const handleNumberOfLinksToShow = () => {
-    if (window.innerWidth > 1900) {
-      setShowLinks(8);
-    } else if (window.innerWidth > 1280) {
-      setShowLinks(6);
-    } else if (window.innerWidth > 650) {
-      setShowLinks(4);
-    } else setShowLinks(3);
-  };
-
-  const { width } = useWindowDimensions();
-
   useEffect(() => {
-    handleNumberOfLinksToShow();
-  }, [width]);
-
-  const importBookmarks = async (e: any, format: MigrationFormat) => {
-    const file: File = e.target.files[0];
-
-    if (file) {
-      var reader = new FileReader();
-      reader.readAsText(file, "UTF-8");
-      reader.onload = async function (e) {
-        const load = toast.loading("Importing...");
-
-        const request: string = e.target?.result as string;
-
-        const body: MigrationRequest = {
-          format,
-          data: request,
-        };
-
-        const response = await fetch("/api/v1/migration", {
-          method: "POST",
-          body: JSON.stringify(body),
-        });
-
-        const data = await response.json();
-
-        toast.dismiss(load);
-
-        toast.success("Imported the Bookmarks! Reloading the page...");
-
-        setTimeout(() => {
-          location.reload();
-        }, 2000);
-      };
-      reader.onerror = function (e) {
-        console.log("Error:", e);
-      };
+    if (
+      process.env.NEXT_PUBLIC_STRIPE === "true" &&
+      account &&
+      account.id &&
+      account.referredBy === null &&
+      // if user is using Linkwarden for more than 3 days
+      new Date().getTime() - new Date(account.createdAt).getTime() >
+        3 * 24 * 60 * 60 * 1000
+    ) {
+      setTimeout(() => {
+        setShowsSurveyModal(true);
+      }, 1000);
     }
-  };
+  }, [account]);
+
+  const numberOfLinksToShow = useMemo(() => {
+    if (account.dashboardRecentLinks && account.dashboardPinnedLinks) {
+      if (window.innerWidth > 1900) {
+        return 10;
+      } else if (window.innerWidth > 1500) {
+        return 8;
+      } else if (window.innerWidth > 880) {
+        return 6;
+      } else if (window.innerWidth > 550) {
+        return 4;
+      } else {
+        return 2;
+      }
+    } else {
+      return 100;
+    }
+  }, []);
 
   const [newLinkModal, setNewLinkModal] = useState(false);
 
-  const [viewMode, setViewMode] = useState<string>(
-    localStorage.getItem("viewMode") || ViewMode.Card
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    (localStorage.getItem("viewMode") as ViewMode) || ViewMode.Card
   );
 
-  const linkView = {
-    [ViewMode.Card]: CardView,
-    // [ViewMode.Grid]: GridView,
-    [ViewMode.List]: ListView,
-  };
+  const [showSurveyModal, setShowsSurveyModal] = useState(false);
 
-  // @ts-ignore
-  const LinkComponent = linkView[viewMode];
+  const { data: user } = useUser();
+  const updateUser = useUpdateUser();
+
+  const [submitLoader, setSubmitLoader] = useState(false);
+
+  const submitSurvey = async (referer: string, other?: string) => {
+    if (submitLoader) return;
+
+    setSubmitLoader(true);
+
+    const load = toast.loading(t("applying"));
+
+    await updateUser.mutateAsync(
+      {
+        ...user,
+        referredBy: referer === "other" ? "Other: " + other : referer,
+      },
+      {
+        onSettled: (data, error) => {
+          console.log(data, error);
+          setSubmitLoader(false);
+          toast.dismiss(load);
+
+          if (error) {
+            toast.error(error.message);
+          } else {
+            toast.success(t("thanks_for_feedback"));
+            setShowsSurveyModal(false);
+          }
+        },
+      }
+    );
+  };
 
   return (
     <MainLayout>
@@ -113,199 +125,192 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <PageHeader
             icon={"bi-house "}
-            title={"Dashboard"}
-            description={"A brief overview of your data"}
+            title={t("dashboard")}
+            description={t("dashboard_desc")}
           />
           <ViewDropdown viewMode={viewMode} setViewMode={setViewMode} />
         </div>
 
-        <div>
-          <div className="flex justify-evenly flex-col xl:flex-row xl:items-center gap-2 xl:w-full h-full rounded-2xl p-8 border border-neutral-content bg-base-200">
-            <DashboardItem
-              name={numberOfLinks === 1 ? "Link" : "Links"}
-              value={numberOfLinks}
-              icon={"bi-link-45deg"}
-            />
+        <div className="xl:flex flex flex-col sm:grid grid-cols-2 gap-3 xl:flex-row xl:justify-evenly xl:w-full">
+          <DashboardItem
+            name={numberOfLinks === 1 ? t("link") : t("links")}
+            value={numberOfLinks}
+            icon={"bi-link-45deg"}
+          />
 
-            <div className="divider xl:divider-horizontal"></div>
+          <DashboardItem
+            name={collections.length === 1 ? t("collection") : t("collections")}
+            value={collections.length}
+            icon={"bi-folder"}
+          />
 
-            <DashboardItem
-              name={collections.length === 1 ? "Collection" : "Collections"}
-              value={collections.length}
-              icon={"bi-folder"}
-            />
+          <DashboardItem
+            name={tags.length === 1 ? t("tag") : t("tags")}
+            value={tags.length}
+            icon={"bi-hash"}
+          />
 
-            <div className="divider xl:divider-horizontal"></div>
-
-            <DashboardItem
-              name={tags.length === 1 ? "Tag" : "Tags"}
-              value={tags.length}
-              icon={"bi-hash"}
-            />
-          </div>
+          <DashboardItem
+            name={t("pinned")}
+            value={numberOfPinnedLinks}
+            icon={"bi-pin-angle"}
+          />
         </div>
 
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2 items-center">
-            <PageHeader
-              icon={"bi-clock-history"}
-              title={"Recent"}
-              description={"Recently added Links"}
-            />
-          </div>
-          <Link
-            href="/links"
-            className="flex items-center text-sm text-black/75 dark:text-white/75 gap-2 cursor-pointer"
-          >
-            View All
-            <i className="bi-chevron-right text-sm"></i>
-          </Link>
-        </div>
-
-        <div
-          style={{ flex: "0 1 auto" }}
-          className="flex flex-col 2xl:flex-row items-start 2xl:gap-2"
-        >
-          {links[0] ? (
-            <div className="w-full">
-              <LinkComponent links={links.slice(0, showLinks)} />
-            </div>
-          ) : (
-            <div
-              style={{ flex: "1 1 auto" }}
-              className="sky-shadow flex flex-col justify-center h-full border border-solid border-neutral-content w-full mx-auto p-10 rounded-2xl bg-base-200"
-            >
-              <p className="text-center text-2xl">
-                View Your Recently Added Links Here!
-              </p>
-              <p className="text-center mx-auto max-w-96 w-fit text-neutral text-sm mt-2">
-                This section will view your latest added Links across every
-                Collections you have access to.
-              </p>
-
-              <div className="text-center w-full mt-4 flex flex-wrap gap-4 justify-center">
-                <div
-                  onClick={() => {
-                    setNewLinkModal(true);
-                  }}
-                  className="inline-flex items-center gap-2 text-sm btn btn-accent dark:border-violet-400 text-white"
-                >
-                  <i className="bi-plus-lg text-xl duration-100"></i>
-                  <span className="group-hover:opacity-0 text-right duration-100">
-                    Add New Link
-                  </span>
-                </div>
-
-                <div className="dropdown dropdown-bottom">
-                  <div
-                    tabIndex={0}
-                    role="button"
-                    className="inline-flex items-center gap-2 text-sm btn btn-outline btn-neutral"
-                    id="import-dropdown"
-                  >
-                    <i className="bi-cloud-upload text-xl duration-100"></i>
-                    <p>Import From</p>
-                  </div>
-                  <ul className="shadow menu dropdown-content z-[1] bg-base-200 border border-neutral-content rounded-box mt-1 w-60">
-                    <li>
-                      <label
-                        tabIndex={0}
-                        role="button"
-                        htmlFor="import-linkwarden-file"
-                        title="JSON File"
-                      >
-                        From Linkwarden
-                        <input
-                          type="file"
-                          name="photo"
-                          id="import-linkwarden-file"
-                          accept=".json"
-                          className="hidden"
-                          onChange={(e) =>
-                            importBookmarks(e, MigrationFormat.linkwarden)
-                          }
-                        />
-                      </label>
-                    </li>
-                    <li>
-                      <label
-                        tabIndex={0}
-                        role="button"
-                        htmlFor="import-html-file"
-                        title="HTML File"
-                      >
-                        From Bookmarks HTML file
-                        <input
-                          type="file"
-                          name="photo"
-                          id="import-html-file"
-                          accept=".html"
-                          className="hidden"
-                          onChange={(e) =>
-                            importBookmarks(e, MigrationFormat.htmlFile)
-                          }
-                        />
-                      </label>
-                    </li>
-                  </ul>
-                </div>
+        {account.dashboardRecentLinks && (
+          <>
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2 items-center">
+                <PageHeader
+                  icon={"bi-clock-history"}
+                  title={t("recent")}
+                  description={t("recent_links_desc")}
+                />
               </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2 items-center">
-            <PageHeader
-              icon={"bi-pin-angle"}
-              title={"Pinned"}
-              description={"Your pinned Links"}
-            />
-          </div>
-          <Link
-            href="/links/pinned"
-            className="flex items-center text-sm text-black/75 dark:text-white/75 gap-2 cursor-pointer"
-          >
-            View All
-            <i className="bi-chevron-right text-sm "></i>
-          </Link>
-        </div>
-
-        <div
-          style={{ flex: "1 1 auto" }}
-          className="flex flex-col 2xl:flex-row items-start 2xl:gap-2"
-        >
-          {links.some((e) => e.pinnedBy && e.pinnedBy[0]) ? (
-            <div className="w-full">
-              <div
-                className={`grid min-[1900px]:grid-cols-5 xl:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-5 w-full`}
+              <Link
+                href="/links"
+                className="flex items-center text-sm text-black/75 dark:text-white/75 gap-2 cursor-pointer"
               >
-                {links
-                  .filter((e) => e.pinnedBy && e.pinnedBy[0])
-                  .map((e, i) => <LinkCard key={i} link={e} count={i} />)
-                  .slice(0, showLinks)}
-              </div>
+                {t("view_all")}
+                <i className="bi-chevron-right text-sm"></i>
+              </Link>
             </div>
-          ) : (
+
+            <div
+              style={{
+                flex:
+                  links || dashboardData.isLoading ? "0 1 auto" : "1 1 auto",
+              }}
+              className="flex flex-col 2xl:flex-row items-start 2xl:gap-2"
+            >
+              {dashboardData.isLoading ? (
+                <div className="w-full">
+                  <Links
+                    layout={viewMode}
+                    placeholderCount={settings.columns || 1}
+                    useData={dashboardData}
+                  />
+                </div>
+              ) : links && links[0] && !dashboardData.isLoading ? (
+                <div className="w-full">
+                  <Links
+                    links={links.slice(
+                      0,
+                      settings.columns &&
+                        account.dashboardRecentLinks &&
+                        account.dashboardPinnedLinks
+                        ? settings.columns * 2
+                        : numberOfLinksToShow
+                    )}
+                    layout={viewMode}
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col justify-center h-full border border-solid border-neutral-content w-full mx-auto p-10 rounded-2xl bg-base-200 bg-gradient-to-tr from-neutral-content/70 to-50% to-base-200">
+                  <p className="text-center text-2xl">
+                    {t("view_added_links_here")}
+                  </p>
+                  <p className="text-center mx-auto max-w-96 w-fit text-neutral text-sm mt-2">
+                    {t("view_added_links_here_desc")}
+                  </p>
+
+                  <div className="text-center w-full mt-4 flex flex-wrap gap-4 justify-center">
+                    <div
+                      onClick={() => {
+                        setNewLinkModal(true);
+                      }}
+                      className="inline-flex items-center gap-2 text-sm btn btn-accent dark:border-violet-400 text-white"
+                    >
+                      <i className="bi-plus-lg text-xl"></i>
+                      <span className="group-hover:opacity-0 text-right">
+                        {t("add_link")}
+                      </span>
+                    </div>
+
+                    <ImportDropdown />
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {account.dashboardPinnedLinks && (
+          <>
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2 items-center">
+                <PageHeader
+                  icon={"bi-pin-angle"}
+                  title={t("pinned")}
+                  description={t("pinned_links_desc")}
+                />
+              </div>
+              <Link
+                href="/links/pinned"
+                className="flex items-center text-sm text-black/75 dark:text-white/75 gap-2 cursor-pointer"
+              >
+                {t("view_all")}
+                <i className="bi-chevron-right text-sm "></i>
+              </Link>
+            </div>
+
             <div
               style={{ flex: "1 1 auto" }}
-              className="sky-shadow flex flex-col justify-center h-full border border-solid border-neutral-content w-full mx-auto p-10 rounded-2xl bg-base-200"
+              className="flex flex-col 2xl:flex-row items-start 2xl:gap-2"
             >
-              <p className="text-center text-2xl">
-                Pin Your Favorite Links Here!
-              </p>
-              <p className="text-center mx-auto max-w-96 w-fit text-neutral text-sm mt-2">
-                You can Pin your favorite Links by clicking on the three dots on
-                each Link and clicking{" "}
-                <span className="font-semibold">Pin to Dashboard</span>.
-              </p>
+              {dashboardData.isLoading ? (
+                <div className="w-full">
+                  <Links
+                    layout={viewMode}
+                    placeholderCount={settings.columns || 1}
+                    useData={dashboardData}
+                  />
+                </div>
+              ) : links?.some((e: any) => e.pinnedBy && e.pinnedBy[0]) ? (
+                <div className="w-full">
+                  <Links
+                    links={links
+                      .filter((e: any) => e.pinnedBy && e.pinnedBy[0])
+                      .slice(
+                        0,
+                        settings.columns &&
+                          account.dashboardRecentLinks &&
+                          account.dashboardPinnedLinks
+                          ? settings.columns * 2
+                          : numberOfLinksToShow
+                      )}
+                    layout={viewMode}
+                  />
+                </div>
+              ) : (
+                <div
+                  style={{ flex: "1 1 auto" }}
+                  className="flex flex-col gap-2 justify-center h-full border border-solid border-neutral-content w-full mx-auto p-10 rounded-2xl bg-base-200 bg-gradient-to-tr from-neutral-content/70 to-50% to-base-200"
+                >
+                  <i className="bi-pin mx-auto text-6xl text-primary"></i>
+                  <p className="text-center text-2xl">
+                    {t("pin_favorite_links_here")}
+                  </p>
+                  <p className="text-center mx-auto max-w-96 w-fit text-neutral text-sm">
+                    {t("pin_favorite_links_here_desc")}
+                  </p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
-      {newLinkModal ? (
-        <NewLinkModal onClose={() => setNewLinkModal(false)} />
-      ) : undefined}
+      {showSurveyModal && (
+        <SurveyModal
+          submit={submitSurvey}
+          onClose={() => {
+            setShowsSurveyModal(false);
+          }}
+        />
+      )}
+      {newLinkModal && <NewLinkModal onClose={() => setNewLinkModal(false)} />}
     </MainLayout>
   );
 }
+
+export { getServerSideProps };

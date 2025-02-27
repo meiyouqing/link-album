@@ -1,57 +1,69 @@
 import NoLinksFound from "@/components/NoLinksFound";
-import SortDropdown from "@/components/SortDropdown";
-import useLinks from "@/hooks/useLinks";
+import { useLinks } from "@/hooks/store/links";
 import MainLayout from "@/layouts/MainLayout";
-import useLinkStore from "@/store/links";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Sort, ViewMode } from "@/types/global";
-import ViewDropdown from "@/components/ViewDropdown";
-import CardView from "@/components/LinkViews/Layouts/CardView";
-import ListView from "@/components/LinkViews/Layouts/ListView";
-// import GridView from "@/components/LinkViews/Layouts/GridView";
+import { useRouter } from "next/router";
+import LinkListOptions from "@/components/LinkListOptions";
+import getServerSideProps from "@/lib/client/getServerSideProps";
+import { useTranslation } from "next-i18next";
+import Links from "@/components/LinkViews/Links";
 
-export default function Links() {
-  const { links } = useLinkStore();
+export default function Index() {
+  const { t } = useTranslation();
 
-  const [viewMode, setViewMode] = useState<string>(
-    localStorage.getItem("viewMode") || ViewMode.Card
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    (localStorage.getItem("viewMode") as ViewMode) || ViewMode.Card
   );
-  const [sortBy, setSortBy] = useState<Sort>(Sort.DateNewestFirst);
+  const [sortBy, setSortBy] = useState<Sort>(
+    Number(localStorage.getItem("sortBy")) ?? Sort.DateNewestFirst
+  );
 
-  useLinks({ sort: sortBy });
+  const { links, data } = useLinks({
+    sort: sortBy,
+  });
 
-  const linkView = {
-    [ViewMode.Card]: CardView,
-    // [ViewMode.Grid]: GridView,
-    [ViewMode.List]: ListView,
-  };
+  const router = useRouter();
 
-  // @ts-ignore
-  const LinkComponent = linkView[viewMode];
+  const [editMode, setEditMode] = useState(false);
+
+  useEffect(() => {
+    if (editMode) return setEditMode(false);
+  }, [router]);
 
   return (
     <MainLayout>
       <div className="p-5 flex flex-col gap-5 w-full h-full">
-        <div className="flex justify-between">
+        <LinkListOptions
+          t={t}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          editMode={editMode}
+          setEditMode={setEditMode}
+        >
           <PageHeader
             icon={"bi-link-45deg"}
-            title={"All Links"}
-            description={"Links from every Collections"}
+            title={t("all_links")}
+            description={t("all_links_desc")}
           />
+        </LinkListOptions>
 
-          <div className="mt-2 flex items-center justify-end gap-2">
-            <SortDropdown sortBy={sortBy} setSort={setSortBy} />
-            <ViewDropdown viewMode={viewMode} setViewMode={setViewMode} />
-          </div>
-        </div>
-
-        {links[0] ? (
-          <LinkComponent links={links} />
-        ) : (
-          <NoLinksFound text="You Haven't Created Any Links Yet" />
+        {!data.isLoading && links && !links[0] && (
+          <NoLinksFound text={t("you_have_not_added_any_links")} />
         )}
+        <Links
+          editMode={editMode}
+          links={links}
+          layout={viewMode}
+          placeholderCount={1}
+          useData={data}
+        />
       </div>
     </MainLayout>
   );
 }
+
+export { getServerSideProps };

@@ -1,77 +1,88 @@
 import { prisma } from "@/lib/api/db";
-import { LinkIncludingShortenedCollectionAndTags } from "@/types/global";
-import getTitle from "@/lib/shared/getTitle";
-import { UsersAndCollections } from "@prisma/client";
-import getPermission from "@/lib/api/getPermission";
+import fetchTitleAndHeaders from "@/lib/shared/fetchTitleAndHeaders";
 import createFolder from "@/lib/api/storage/createFolder";
-import validateUrlSize from "../../validateUrlSize";
-
-const MAX_LINKS_PER_USER = Number(process.env.MAX_LINKS_PER_USER) || 30000;
+import setCollection from "../../setCollection";
+import {
+  PostLinkSchema,
+  PostLinkSchemaType,
+} from "@/lib/shared/schemaValidation";
+import { hasPassedLimit } from "../../verifyCapacity";
 
 export default async function postLink(
-  link: LinkIncludingShortenedCollectionAndTags,
+  body: PostLinkSchemaType,
   userId: number
 ) {
-  try {
-    new URL(link.url || "");
-  } catch (error) {
+  const dataValidation = PostLinkSchema.safeParse(body);
+
+  if (!dataValidation.success) {
     return {
-      response:
-        "Please enter a valid Address for the Link. (It should start with http/https)",
+      response: `Error: ${
+        dataValidation.error.issues[0].message
+      } [${dataValidation.error.issues[0].path.join(", ")}]`,
       status: 400,
     };
   }
 
-  if (!link.collection.name) {
-    link.collection.name = "Unorganized";
-  }
+  const link = dataValidation.data;
 
-  const numberOfLinksTheUserHas = await prisma.link.count({
+  const linkCollection = await setCollection({
+    userId,
+    collectionId: link.collection?.id,
+    collectionName: link.collection?.name,
+  });
+
+  if (!linkCollection)
+    return { response: "Collection is not accessible.", status: 400 };
+
+  const user = await prisma.user.findUnique({
     where: {
-      collection: {
-        ownerId: userId,
-      },
+      id: userId,
     },
   });
 
-  if (numberOfLinksTheUserHas + 1 > MAX_LINKS_PER_USER)
-    return {
-      response: `Error: Each user can only have a maximum of ${MAX_LINKS_PER_USER} Links.`,
-      status: 400,
-    };
+  if (user?.preventDuplicateLinks) {
+    const url = link.url?.trim().replace(/\/+$/, ""); // trim and remove trailing slashes from the URL
+    const hasWwwPrefix = url?.includes(`://www.`);
+    const urlWithoutWww = hasWwwPrefix ? url?.replace(`://www.`, "://") : url;
+    const urlWithWww = hasWwwPrefix ? url : url?.replace("://", `://www.`);
 
-  link.collection.name = link.collection.name.trim();
-
-  if (link.collection.id) {
-    const collectionIsAccessible = await getPermission({
-      userId,
-      collectionId: link.collection.id,
+    const existingLink = await prisma.link.findFirst({
+      where: {
+        OR: [{ url: urlWithWww }, { url: urlWithoutWww }],
+        collection: {
+          ownerId: userId,
+        },
+      },
     });
 
-    const memberHasAccess = collectionIsAccessible?.members.some(
-      (e: UsersAndCollections) => e.userId === userId && e.canCreate
-    );
-
-    if (!(collectionIsAccessible?.ownerId === userId || memberHasAccess))
-      return { response: "Collection is not accessible.", status: 401 };
-  } else {
-    link.collection.ownerId = userId;
+    if (existingLink)
+      return {
+        response: "Link already exists",
+        status: 409,
+      };
   }
 
-  const description =
-    link.description && link.description !== ""
-      ? link.description
-      : link.url
-        ? await getTitle(link.url)
-        : undefined;
+  const hasTooManyLinks = await hasPassedLimit(userId, 1);
 
-  const validatedUrl = link.url ? await validateUrlSize(link.url) : undefined;
+  if (hasTooManyLinks) {
+    return {
+      response: `Your subscription has reached the maximum number of links allowed.`,
+      status: 400,
+    };
+  }
 
-  const contentType = validatedUrl?.get("content-type");
+  const { title = "", headers = new Headers() } = link.url
+    ? await fetchTitleAndHeaders(link.url)
+    : {};
+
+  const name =
+    link.name && link.name !== "" ? link.name : link.url ? title : "";
+
+  const contentType = headers?.get("content-type");
   let linkType = "url";
   let imageExtension = "png";
 
-  if (!link.url) linkType = link.type;
+  if (!link.url) linkType = link.type || "url";
   else if (contentType === "application/pdf") linkType = "pdf";
   else if (contentType?.startsWith("image")) {
     linkType = "image";
@@ -79,39 +90,37 @@ export default async function postLink(
     else if (contentType === "image/png") imageExtension = "png";
   }
 
+  if (!link.tags) link.tags = [];
+
   const newLink = await prisma.link.create({
     data: {
-      url: link.url,
-      name: link.name,
-      description,
+      url: link.url?.trim() || null,
+      name,
+      description: link.description,
       type: linkType,
+      createdBy: {
+        connect: {
+          id: userId,
+        },
+      },
       collection: {
-        connectOrCreate: {
-          where: {
-            name_ownerId: {
-              ownerId: link.collection.ownerId,
-              name: link.collection.name,
-            },
-          },
-          create: {
-            name: link.collection.name.trim(),
-            ownerId: userId,
-          },
+        connect: {
+          id: linkCollection.id,
         },
       },
       tags: {
-        connectOrCreate: link.tags.map((tag) => ({
+        connectOrCreate: link.tags?.map((tag) => ({
           where: {
             name_ownerId: {
               name: tag.name.trim(),
-              ownerId: link.collection.ownerId,
+              ownerId: linkCollection.ownerId,
             },
           },
           create: {
             name: tag.name.trim(),
             owner: {
               connect: {
-                id: link.collection.ownerId,
+                id: linkCollection.ownerId,
               },
             },
           },
@@ -119,6 +128,17 @@ export default async function postLink(
       },
     },
     include: { tags: true, collection: true },
+  });
+
+  await prisma.link.update({
+    where: { id: newLink.id },
+    data: {
+      image: link.image
+        ? `archives/${newLink.collectionId}/${newLink.id}.${
+            link.image === "png" ? "png" : "jpeg"
+          }`
+        : undefined,
+    },
   });
 
   createFolder({ filePath: `archives/${newLink.collectionId}` });

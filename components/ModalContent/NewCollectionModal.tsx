@@ -1,30 +1,39 @@
 import React, { useEffect, useState } from "react";
 import TextInput from "@/components/TextInput";
-import useCollectionStore from "@/store/collections";
-import toast from "react-hot-toast";
-import { HexColorPicker } from "react-colorful";
 import { Collection } from "@prisma/client";
 import Modal from "../Modal";
+import { CollectionIncludingMembersAndLinkCount } from "@/types/global";
+import { useTranslation } from "next-i18next";
+import { useCreateCollection } from "@/hooks/store/collections";
+import toast from "react-hot-toast";
+import IconPicker from "../IconPicker";
+import { IconWeight } from "@phosphor-icons/react";
+import oklchVariableToHex from "@/lib/client/oklchVariableToHex";
 
 type Props = {
   onClose: Function;
+  parent?: CollectionIncludingMembersAndLinkCount;
 };
 
-export default function NewCollectionModal({ onClose }: Props) {
+export default function NewCollectionModal({ onClose, parent }: Props) {
+  const { t } = useTranslation();
+
   const initial = {
+    parentId: parent?.id,
     name: "",
     description: "",
-    color: "#0ea5e9",
-  };
+    color: oklchVariableToHex("--p"), // Use resolved color
+  } as Partial<Collection>;
 
   const [collection, setCollection] = useState<Partial<Collection>>(initial);
 
   useEffect(() => {
     setCollection(initial);
-  }, []);
+  }, [parent]);
 
   const [submitLoader, setSubmitLoader] = useState(false);
-  const { addCollection } = useCollectionStore();
+
+  const createCollection = useCreateCollection();
 
   const submit = async () => {
     if (submitLoader) return;
@@ -32,75 +41,84 @@ export default function NewCollectionModal({ onClose }: Props) {
 
     setSubmitLoader(true);
 
-    const load = toast.loading("Creating...");
+    const load = toast.loading(t("creating"));
 
-    let response = await addCollection(collection as any);
-    toast.dismiss(load);
+    await createCollection.mutateAsync(collection, {
+      onSettled: (data, error) => {
+        setSubmitLoader(false);
+        toast.dismiss(load);
 
-    if (response.ok) {
-      toast.success("Created!");
-      onClose();
-    } else toast.error(response.data as string);
-
-    setSubmitLoader(false);
+        if (error) {
+          toast.error(error.message);
+        } else {
+          onClose();
+          toast.success(t("created"));
+        }
+      },
+    });
   };
 
   return (
     <Modal toggleModal={onClose}>
-      <p className="text-xl font-thin">Create a New Collection</p>
+      {parent?.id ? (
+        <>
+          <p className="text-xl font-thin">{t("new_sub_collection")}</p>
+          <p className="capitalize text-sm">
+            {t("for_collection", { name: parent.name })}
+          </p>
+        </>
+      ) : (
+        <p className="text-xl font-thin">{t("create_new_collection")}</p>
+      )}
 
       <div className="divider mb-3 mt-1"></div>
 
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="w-full">
-            <p className="mb-2">Name</p>
-            <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-3 items-end">
+            <IconPicker
+              color={collection.color || oklchVariableToHex("--p")}
+              setColor={(color: string) =>
+                setCollection({ ...collection, color })
+              }
+              weight={(collection.iconWeight || "regular") as IconWeight}
+              setWeight={(iconWeight: string) =>
+                setCollection({ ...collection, iconWeight })
+              }
+              iconName={collection.icon as string}
+              setIconName={(icon: string) =>
+                setCollection({ ...collection, icon })
+              }
+              reset={() =>
+                setCollection({
+                  ...collection,
+                  color: oklchVariableToHex("--p"),
+                  icon: "",
+                  iconWeight: "",
+                })
+              }
+            />
+            <div className="w-full">
+              <p className="mb-2">{t("name")}</p>
               <TextInput
                 className="bg-base-200"
                 value={collection.name}
-                placeholder="e.g. Example Collection"
+                placeholder={t("collection_name_placeholder")}
                 onChange={(e) =>
                   setCollection({ ...collection, name: e.target.value })
                 }
               />
-              <div>
-                <p className="w-full mb-2">Color</p>
-                <div className="color-picker flex justify-between">
-                  <div className="flex flex-col gap-2 items-center w-32">
-                    <i
-                      className={"bi-folder-fill text-5xl"}
-                      style={{ color: collection.color }}
-                    ></i>
-                    <div
-                      className="btn btn-ghost btn-xs"
-                      onClick={() =>
-                        setCollection({ ...collection, color: "#0ea5e9" })
-                      }
-                    >
-                      Reset
-                    </div>
-                  </div>
-                  <HexColorPicker
-                    color={collection.color}
-                    onChange={(e) => setCollection({ ...collection, color: e })}
-                  />
-                </div>
-              </div>
             </div>
           </div>
 
           <div className="w-full">
-            <p className="mb-2">Description</p>
+            <p className="mb-2">{t("description")}</p>
             <textarea
-              className="w-full h-[13rem] resize-none border rounded-md duration-100 bg-base-200 p-2 outline-none border-neutral-content focus:border-primary"
-              placeholder="The purpose of this Collection..."
+              className="w-full h-32 resize-none border rounded-md duration-100 bg-base-200 p-2 outline-none border-neutral-content focus:border-primary"
+              placeholder={t("collection_description_placeholder")}
               value={collection.description}
               onChange={(e) =>
-                setCollection({
-                  ...collection,
-                  description: e.target.value,
-                })
+                setCollection({ ...collection, description: e.target.value })
               }
             />
           </div>
@@ -110,7 +128,7 @@ export default function NewCollectionModal({ onClose }: Props) {
           className="btn btn-accent dark:border-violet-400 text-white w-fit ml-auto"
           onClick={submit}
         >
-          Create Collection
+          {t("create_collection_button")}
         </button>
       </div>
     </Modal>

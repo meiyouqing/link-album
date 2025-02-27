@@ -5,7 +5,7 @@ type Props = {
   src?: string;
   className?: string;
   priority?: boolean;
-  name?: string;
+  name?: string | null;
   large?: boolean;
 };
 
@@ -19,7 +19,7 @@ export default function ProfilePhoto({
   const [image, setImage] = useState("");
 
   useEffect(() => {
-    if (src && !src?.includes("base64"))
+    if (src && !src?.includes("base64") && !src.startsWith("http"))
       setImage(`/api/v1/${src.replace("uploads/", "").replace(".jpg", "")}`);
     else if (!src) setImage("");
     else {
@@ -45,7 +45,7 @@ export default function ProfilePhoto({
     <div
       className={`avatar skeleton rounded-full drop-shadow-md ${
         className || ""
-      } ${large || "w-8 h-8"}`}
+      } ${large ? "w-28 h-28" : "w-8 h-8"}`}
     >
       <div className="rounded-full w-full h-full ring-2 ring-neutral-content">
         <Image

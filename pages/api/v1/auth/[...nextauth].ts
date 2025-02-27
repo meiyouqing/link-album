@@ -1,28 +1,33 @@
 import { prisma } from "@/lib/api/db";
-import NextAuth from "next-auth/next";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { AuthOptions } from "next-auth";
-import bcrypt from "bcrypt";
-import EmailProvider from "next-auth/providers/email";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { Adapter } from "next-auth/adapters";
+import sendInvitationRequest from "@/lib/api/sendInvitationRequest";
 import sendVerificationRequest from "@/lib/api/sendVerificationRequest";
+import updateSeats from "@/lib/api/stripe/updateSeats";
+import verifySubscription from "@/lib/api/stripe/verifySubscription";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { User } from "@prisma/client";
+import bcrypt from "bcrypt";
+import type { NextApiRequest, NextApiResponse } from "next";
+import { Adapter } from "next-auth/adapters";
+import NextAuth from "next-auth/next";
 import { Provider } from "next-auth/providers";
-import verifySubscription from "@/lib/api/verifySubscription";
 import FortyTwoProvider from "next-auth/providers/42-school";
 import AppleProvider from "next-auth/providers/apple";
 import AtlassianProvider from "next-auth/providers/atlassian";
 import Auth0Provider from "next-auth/providers/auth0";
 import AuthentikProvider from "next-auth/providers/authentik";
+import AzureAdProvider from "next-auth/providers/azure-ad";
+import AzureAdB2CProvider from "next-auth/providers/azure-ad-b2c";
 import BattleNetProvider, {
   BattleNetIssuer,
 } from "next-auth/providers/battlenet";
 import BoxProvider from "next-auth/providers/box";
 import CognitoProvider from "next-auth/providers/cognito";
 import CoinbaseProvider from "next-auth/providers/coinbase";
+import CredentialsProvider from "next-auth/providers/credentials";
 import DiscordProvider from "next-auth/providers/discord";
 import DropboxProvider from "next-auth/providers/dropbox";
 import DuendeIDS6Provider from "next-auth/providers/duende-identity-server6";
+import EmailProvider from "next-auth/providers/email";
 import EVEOnlineProvider from "next-auth/providers/eveonline";
 import FacebookProvider from "next-auth/providers/facebook";
 import FaceItProvider from "next-auth/providers/faceit";
@@ -76,10 +81,7 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
 const providers: Provider[] = [];
 
-if (
-  process.env.NEXT_PUBLIC_CREDENTIALS_ENABLED === "true" ||
-  process.env.NEXT_PUBLIC_CREDENTIALS_ENABLED === undefined
-) {
+if (process.env.NEXT_PUBLIC_CREDENTIALS_ENABLED !== "false") {
   // undefined is for backwards compatibility
   providers.push(
     CredentialsProvider({
@@ -105,12 +107,16 @@ if (
                     email: username?.toLowerCase(),
                   },
                 ],
-                emailVerified: { not: null },
               }
             : {
                 username: username.toLowerCase(),
               },
         });
+
+        if (!user) throw Error("Invalid credentials.");
+        else if (!user?.emailVerified && emailEnabled) {
+          throw Error("Email not verified.");
+        }
 
         let passwordMatches: boolean = false;
 
@@ -118,9 +124,9 @@ if (
           passwordMatches = bcrypt.compareSync(password, user.password);
         }
 
-        if (passwordMatches) {
+        if (passwordMatches && user?.password) {
           return { id: user?.id };
-        } else return null as any;
+        } else throw Error("Invalid credentials.");
       },
     })
   );
@@ -129,11 +135,80 @@ if (
 if (emailEnabled) {
   providers.push(
     EmailProvider({
+      id: "email",
       server: process.env.EMAIL_SERVER,
       from: process.env.EMAIL_FROM,
       maxAge: 1200,
-      sendVerificationRequest(params) {
-        sendVerificationRequest(params);
+      async sendVerificationRequest({ identifier, url, provider, token }) {
+        const recentVerificationRequestsCount =
+          await prisma.verificationToken.count({
+            where: {
+              identifier,
+              createdAt: {
+                gt: new Date(new Date().getTime() - 1000 * 60 * 5), // 5 minutes
+              },
+            },
+          });
+
+        if (recentVerificationRequestsCount >= 4)
+          throw Error("Too many requests. Please try again later.");
+
+        sendVerificationRequest({
+          identifier,
+          url,
+          from: provider.from as string,
+          token,
+        });
+      },
+    }),
+    EmailProvider({
+      id: "invite",
+      server: process.env.EMAIL_SERVER,
+      from: process.env.EMAIL_FROM,
+      maxAge: 1200,
+      async sendVerificationRequest({ identifier, url, provider, token }) {
+        const parentSubscriptionEmail = (
+          await prisma.user.findFirst({
+            where: {
+              email: identifier,
+              emailVerified: null,
+            },
+            include: {
+              parentSubscription: {
+                include: {
+                  user: {
+                    select: {
+                      email: true,
+                    },
+                  },
+                },
+              },
+            },
+          })
+        )?.parentSubscription?.user.email;
+
+        if (!parentSubscriptionEmail) throw Error("Invalid email.");
+
+        const recentVerificationRequestsCount =
+          await prisma.verificationToken.count({
+            where: {
+              identifier,
+              createdAt: {
+                gt: new Date(new Date().getTime() - 1000 * 60 * 5), // 5 minutes
+              },
+            },
+          });
+
+        if (recentVerificationRequestsCount >= 4)
+          throw Error("Too many requests. Please try again later.");
+
+        sendInvitationRequest({
+          parentSubscriptionEmail,
+          identifier,
+          url,
+          from: provider.from as string,
+          token,
+        });
       },
     })
   );
@@ -239,6 +314,35 @@ if (process.env.NEXT_PUBLIC_AUTH0_ENABLED === "true") {
   };
 }
 
+// Authelia
+if (process.env.NEXT_PUBLIC_AUTHELIA_ENABLED === "true") {
+  providers.push({
+    id: "authelia",
+    name: "Authelia",
+    type: "oauth",
+    clientId: process.env.AUTHELIA_CLIENT_ID!,
+    clientSecret: process.env.AUTHELIA_CLIENT_SECRET!,
+    wellKnown: process.env.AUTHELIA_WELLKNOWN_URL!,
+    authorization: { params: { scope: "openid email profile" } },
+    idToken: true,
+    checks: ["pkce", "state"],
+    profile(profile) {
+      return {
+        id: profile.sub,
+        name: profile.name,
+        email: profile.email,
+        username: profile.preferred_username,
+      };
+    },
+  });
+
+  const _linkAccount = adapter.linkAccount;
+  adapter.linkAccount = (account) => {
+    const { "not-before-policy": _, refresh_expires_in, ...data } = account;
+    return _linkAccount ? _linkAccount(data) : undefined;
+  };
+}
+
 // Authentik
 if (process.env.NEXT_PUBLIC_AUTHENTIK_ENABLED === "true") {
   providers.push(
@@ -265,13 +369,65 @@ if (process.env.NEXT_PUBLIC_AUTHENTIK_ENABLED === "true") {
   };
 }
 
+// Azure AD B2C
+if (process.env.NEXT_PUBLIC_AZURE_AD_ENABLED === "true") {
+  providers.push(
+    AzureAdB2CProvider({
+      tenantId: process.env.AZURE_AD_B2C_TENANT_NAME,
+      clientId: process.env.AZURE_AD_B2C_CLIENT_ID!,
+      clientSecret: process.env.AZURE_AD_B2C_CLIENT_SECRET!,
+      primaryUserFlow: process.env.AZURE_AD_B2C_PRIMARY_USER_FLOW,
+      authorization: { params: { scope: "offline_access openid" } },
+    })
+  );
+
+  const _linkAccount = adapter.linkAccount;
+  adapter.linkAccount = (account) => {
+    const {
+      "not-before-policy": _,
+      refresh_expires_in,
+      refresh_token_expires_in,
+      not_before,
+      id_token_expires_in,
+      profile_info,
+      ...data
+    } = account;
+    return _linkAccount ? _linkAccount(data) : undefined;
+  };
+}
+
+// Azure AD
+if (process.env.NEXT_PUBLIC_AZURE_AD_ENABLED === "true") {
+  providers.push(
+    AzureAdProvider({
+      clientId: process.env.AZURE_AD_CLIENT_ID!,
+      clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
+      tenantId: process.env.AZURE_AD_TENANT_ID,
+    })
+  );
+
+  const _linkAccount = adapter.linkAccount;
+  adapter.linkAccount = (account) => {
+    const {
+      "not-before-policy": _,
+      refresh_expires_in,
+      token_type,
+      expires_in,
+      ext_expires_in,
+      access_token,
+      ...data
+    } = account;
+    return _linkAccount ? _linkAccount(data) : undefined;
+  };
+}
+
 // Battle.net
 if (process.env.NEXT_PUBLIC_BATTLENET_ENABLED === "true") {
   providers.push(
     BattleNetProvider({
       clientId: process.env.BATTLENET_CLIENT_ID!,
       clientSecret: process.env.BATTLENET_CLIENT_SECRET!,
-      issuer: process.env.BATLLENET_ISSUER as BattleNetIssuer,
+      issuer: process.env.BATTLENET_ISSUER as BattleNetIssuer,
     })
   );
 
@@ -519,6 +675,9 @@ if (process.env.NEXT_PUBLIC_GOOGLE_ENABLED === "true") {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      httpOptions: {
+        timeout: 10000,
+      },
     })
   );
 
@@ -1059,60 +1218,193 @@ if (process.env.NEXT_PUBLIC_ZOOM_ENABLED_ENABLED === "true") {
   };
 }
 
-export const authOptions: AuthOptions = {
-  adapter: adapter as Adapter,
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-  providers,
-  pages: {
-    signIn: "/login",
-    verifyRequest: "/confirmation",
-  },
-  callbacks: {
-    async signIn({ user, account, profile, email, credentials }) {
-      if (account?.provider !== "credentials") {
-        // registration via SSO can be separately disabled
-        const existingUser = await prisma.account.findFirst({
-          where: {
-            providerAccountId: account?.providerAccountId,
-          },
-        });
-        if (existingUser && newSsoUsersDisabled) {
-          return false;
+export default async function auth(req: NextApiRequest, res: NextApiResponse) {
+  return await NextAuth(req, res, {
+    adapter: adapter as Adapter,
+    session: {
+      strategy: "jwt",
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+    },
+    providers,
+    pages: {
+      signIn: "/login",
+      verifyRequest: "/confirmation",
+    },
+    callbacks: {
+      async signIn({ user, account, profile, email, credentials }) {
+        if (
+          !(user as User).emailVerified &&
+          !email?.verificationRequest
+          // && (account?.provider === "email" || account?.provider === "google")
+        ) {
+          // Email is being verified for the first time...
+          console.log("Email is being verified for the first time...");
+
+          const parentSubscriptionId = (user as User).parentSubscriptionId;
+
+          if (parentSubscriptionId) {
+            // Add seat request to Stripe
+            const parentSubscription = await prisma.subscription.findFirst({
+              where: {
+                id: parentSubscriptionId,
+              },
+            });
+
+            // Count child users with verified email under a specific subscription, excluding the current user
+            const verifiedChildUsersCount = await prisma.user.count({
+              where: {
+                parentSubscriptionId: parentSubscriptionId,
+                id: {
+                  not: user.id as number,
+                },
+                emailVerified: {
+                  not: null,
+                },
+              },
+            });
+
+            if (
+              STRIPE_SECRET_KEY &&
+              parentSubscription?.quantity &&
+              verifiedChildUsersCount + 2 > // add current user and the admin
+                parentSubscription.quantity
+            ) {
+              // Add seat if the user count exceeds the subscription limit
+              await updateSeats(
+                parentSubscription.stripeSubscriptionId,
+                verifiedChildUsersCount + 2
+              );
+            }
+          }
         }
-      }
-      return true;
-    },
-    async jwt({ token, trigger, user }) {
-      token.sub = token.sub ? Number(token.sub) : undefined;
-      if (trigger === "signIn" || trigger === "signUp")
-        token.id = user?.id as number;
 
-      return token;
-    },
-    async session({ session, token }) {
-      session.user.id = token.id;
+        if (account?.provider !== "credentials") {
+          // registration via SSO can be separately disabled
+          const existingUser = await prisma.account.findFirst({
+            where: {
+              providerAccountId: account?.providerAccountId,
+            },
+          });
 
-      if (STRIPE_SECRET_KEY) {
-        const user = await prisma.user.findUnique({
-          where: {
-            id: token.id,
-          },
-          include: {
-            subscriptions: true,
-          },
-        });
+          if (!existingUser && newSsoUsersDisabled) {
+            return false;
+          }
 
-        if (user) {
-          const subscribedUser = await verifySubscription(user);
+          // If user is already registered, link the provider
+          if (user.email && account) {
+            const findUser = await prisma.user.findFirst({
+              where: {
+                email: user.email,
+              },
+              include: {
+                accounts: true,
+              },
+            });
+
+            if (findUser && findUser.accounts.length === 0) {
+              await prisma.account.create({
+                data: {
+                  userId: findUser.id,
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                  id_token: account.id_token,
+                  access_token: account.access_token,
+                  refresh_token: account.refresh_token,
+                  expires_at: account.expires_at,
+                  token_type: account.token_type,
+                  scope: account.scope,
+                  session_state: account.session_state,
+                },
+              });
+            }
+          }
         }
-      }
 
-      return session;
+        return true;
+      },
+      async jwt({ token, trigger, user }) {
+        token.sub = token.sub ? Number(token.sub) : undefined;
+        if (trigger === "signIn" || trigger === "signUp")
+          token.id = user?.id as number;
+
+        if (trigger === "signUp") {
+          const userExists = await prisma.user.findUnique({
+            where: {
+              id: token.id,
+            },
+            include: {
+              accounts: true,
+            },
+          });
+
+          // Verify SSO user email
+          if (userExists && userExists.accounts.length > 0) {
+            await prisma.user.update({
+              where: {
+                id: userExists.id,
+              },
+              data: {
+                emailVerified: new Date(),
+              },
+            });
+          }
+
+          if (userExists && !userExists.username) {
+            const autoGeneratedUsername =
+              "user" + Math.round(Math.random() * 1000000000);
+
+            await prisma.user.update({
+              where: {
+                id: token.id,
+              },
+              data: {
+                username: autoGeneratedUsername,
+              },
+            });
+          }
+        } else if (trigger === "signIn") {
+          const user = await prisma.user.findUnique({
+            where: {
+              id: token.id,
+            },
+          });
+
+          if (user && !user.username) {
+            const autoGeneratedUsername =
+              "user" + Math.round(Math.random() * 1000000000);
+
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { username: autoGeneratedUsername },
+            });
+          }
+        }
+
+        return token;
+      },
+      async session({ session, token }) {
+        session.user.id = token.id;
+
+        if (STRIPE_SECRET_KEY) {
+          const user = await prisma.user.findUnique({
+            where: {
+              id: token.id,
+            },
+            include: {
+              subscriptions: true,
+              parentSubscription: true,
+            },
+          });
+
+          if (user) {
+            //
+            const subscribedUser = await verifySubscription(user);
+          }
+        }
+
+        return session;
+      },
     },
-  },
-};
-
-export default NextAuth(authOptions);
+  });
+}

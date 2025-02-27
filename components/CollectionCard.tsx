@@ -1,26 +1,31 @@
 import Link from "next/link";
-import { CollectionIncludingMembersAndLinkCount } from "@/types/global";
+import {
+  AccountSettings,
+  CollectionIncludingMembersAndLinkCount,
+} from "@/types/global";
 import React, { useEffect, useState } from "react";
 import ProfilePhoto from "./ProfilePhoto";
 import usePermissions from "@/hooks/usePermissions";
 import useLocalSettingsStore from "@/store/localSettings";
 import getPublicUserData from "@/lib/client/getPublicUserData";
-import useAccountStore from "@/store/account";
 import EditCollectionModal from "./ModalContent/EditCollectionModal";
 import EditCollectionSharingModal from "./ModalContent/EditCollectionSharingModal";
 import DeleteCollectionModal from "./ModalContent/DeleteCollectionModal";
+import { dropdownTriggerer } from "@/lib/client/utils";
+import { useTranslation } from "next-i18next";
+import { useUser } from "@/hooks/store/user";
 
-type Props = {
+export default function CollectionCard({
+  collection,
+}: {
   collection: CollectionIncludingMembersAndLinkCount;
-  className?: string;
-};
-
-export default function CollectionCard({ collection, className }: Props) {
+}) {
+  const { t } = useTranslation();
   const { settings } = useLocalSettingsStore();
-  const { account } = useAccountStore();
+  const { data: user = {} } = useUser();
 
   const formattedDate = new Date(collection.createdAt as string).toLocaleString(
-    "en-US",
+    t("locale"),
     {
       year: "numeric",
       month: "short",
@@ -30,28 +35,24 @@ export default function CollectionCard({ collection, className }: Props) {
 
   const permissions = usePermissions(collection.id as number);
 
-  const [collectionOwner, setCollectionOwner] = useState({
-    id: null as unknown as number,
-    name: "",
-    username: "",
-    image: "",
-    archiveAsScreenshot: undefined as unknown as boolean,
-    archiveAsPDF: undefined as unknown as boolean,
-  });
+  const [collectionOwner, setCollectionOwner] = useState<
+    Partial<AccountSettings>
+  >({});
 
   useEffect(() => {
     const fetchOwner = async () => {
-      if (collection && collection.ownerId !== account.id) {
+      if (collection && collection.ownerId !== user.id) {
         const owner = await getPublicUserData(collection.ownerId as number);
         setCollectionOwner(owner);
-      } else if (collection && collection.ownerId === account.id) {
+      } else if (collection && collection.ownerId === user.id) {
         setCollectionOwner({
-          id: account.id as number,
-          name: account.name,
-          username: account.username as string,
-          image: account.image as string,
-          archiveAsScreenshot: account.archiveAsScreenshot as boolean,
-          archiveAsPDF: account.archiveAsPDF as boolean,
+          id: user.id as number,
+          name: user.name,
+          username: user.username as string,
+          image: user.image as string,
+          archiveAsScreenshot: user.archiveAsScreenshot as boolean,
+          archiveAsMonolith: user.archiveAsMonolith as boolean,
+          archiveAsPDF: user.archiveAsPDF as boolean,
         });
       }
     };
@@ -70,12 +71,13 @@ export default function CollectionCard({ collection, className }: Props) {
         <div
           tabIndex={0}
           role="button"
+          onMouseDown={dropdownTriggerer}
           className="btn btn-ghost btn-sm btn-square text-neutral"
         >
-          <i className="bi-three-dots text-xl" title="More"></i>
+          <i className="bi-three-dots text-xl" title={t("more")}></i>
         </div>
-        <ul className="dropdown-content z-[1] menu shadow bg-base-200 border border-neutral-content rounded-box w-52 mt-1">
-          {permissions === true ? (
+        <ul className="dropdown-content z-[30] menu shadow bg-base-200 border border-neutral-content rounded-box mt-1">
+          {permissions === true && (
             <li>
               <div
                 role="button"
@@ -84,11 +86,12 @@ export default function CollectionCard({ collection, className }: Props) {
                   (document?.activeElement as HTMLElement)?.blur();
                   setEditCollectionModal(true);
                 }}
+                className="whitespace-nowrap"
               >
-                Edit Collection Info
+                {t("edit_collection_info")}
               </div>
             </li>
-          ) : undefined}
+          )}
           <li>
             <div
               role="button"
@@ -97,8 +100,11 @@ export default function CollectionCard({ collection, className }: Props) {
                 (document?.activeElement as HTMLElement)?.blur();
                 setEditCollectionSharingModal(true);
               }}
+              className="whitespace-nowrap"
             >
-              {permissions === true ? "Share and Collaborate" : "View Team"}
+              {permissions === true
+                ? t("share_and_collaborate")
+                : t("view_team")}
             </div>
           </li>
           <li>
@@ -109,8 +115,11 @@ export default function CollectionCard({ collection, className }: Props) {
                 (document?.activeElement as HTMLElement)?.blur();
                 setDeleteCollectionModal(true);
               }}
+              className="whitespace-nowrap"
             >
-              {permissions === true ? "Delete Collection" : "Leave Collection"}
+              {permissions === true
+                ? t("delete_collection")
+                : t("leave_collection")}
             </div>
           </li>
         </ul>
@@ -119,12 +128,12 @@ export default function CollectionCard({ collection, className }: Props) {
         className="flex items-center absolute bottom-3 left-3 z-10 btn px-2 btn-ghost rounded-full"
         onClick={() => setEditCollectionSharingModal(true)}
       >
-        {collectionOwner.id ? (
+        {collectionOwner.id && (
           <ProfilePhoto
             src={collectionOwner.image || undefined}
             name={collectionOwner.name}
           />
-        ) : undefined}
+        )}
         {collection.members
           .sort((a, b) => (a.userId as number) - (b.userId as number))
           .map((e, i) => {
@@ -138,13 +147,13 @@ export default function CollectionCard({ collection, className }: Props) {
             );
           })
           .slice(0, 3)}
-        {collection.members.length - 3 > 0 ? (
+        {collection.members.length - 3 > 0 && (
           <div className={`avatar drop-shadow-md placeholder -ml-3`}>
             <div className="bg-base-100 text-neutral rounded-full w-8 h-8 ring-2 ring-neutral-content">
               <span>+{collection.members.length - 3}</span>
             </div>
           </div>
-        ) : null}
+        )}
       </div>
       <Link
         href={`/collections/${collection.id}`}
@@ -168,15 +177,15 @@ export default function CollectionCard({ collection, className }: Props) {
           <div className="flex justify-end items-center">
             <div className="text-right">
               <div className="font-bold text-sm flex justify-end gap-1 items-center">
-                {collection.isPublic ? (
+                {collection.isPublic && (
                   <i
-                    className="bi-globe-americas drop-shadow text-neutral"
-                    title="This collection is being shared publicly."
+                    className="bi-globe2 drop-shadow text-neutral"
+                    title={t("collection_publicly_shared")}
                   ></i>
-                ) : undefined}
+                )}
                 <i
                   className="bi-link-45deg text-lg text-neutral"
-                  title="This collection is being shared publicly."
+                  title={t("collection_publicly_shared")}
                 ></i>
                 {collection._count && collection._count.links}
               </div>
@@ -184,7 +193,7 @@ export default function CollectionCard({ collection, className }: Props) {
                 <p className="font-bold text-xs flex gap-1 items-center">
                   <i
                     className="bi-calendar3 text-neutral"
-                    title="This collection is being shared publicly."
+                    title={t("collection_publicly_shared")}
                   ></i>
                   {formattedDate}
                 </p>
@@ -193,24 +202,24 @@ export default function CollectionCard({ collection, className }: Props) {
           </div>
         </div>
       </Link>
-      {editCollectionModal ? (
+      {editCollectionModal && (
         <EditCollectionModal
           onClose={() => setEditCollectionModal(false)}
           activeCollection={collection}
         />
-      ) : undefined}
-      {editCollectionSharingModal ? (
+      )}
+      {editCollectionSharingModal && (
         <EditCollectionSharingModal
           onClose={() => setEditCollectionSharingModal(false)}
           activeCollection={collection}
         />
-      ) : undefined}
-      {deleteCollectionModal ? (
+      )}
+      {deleteCollectionModal && (
         <DeleteCollectionModal
           onClose={() => setDeleteCollectionModal(false)}
           activeCollection={collection}
         />
-      ) : undefined}
+      )}
     </div>
   );
 }

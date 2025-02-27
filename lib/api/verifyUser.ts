@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getToken } from "next-auth/jwt";
 import { prisma } from "./db";
 import { User } from "@prisma/client";
-import verifySubscription from "./verifySubscription";
+import verifySubscription from "./stripe/verifySubscription";
+import verifyToken from "./verifyToken";
 
 type Props = {
   req: NextApiRequest;
@@ -15,13 +15,14 @@ export default async function verifyUser({
   req,
   res,
 }: Props): Promise<User | null> {
-  const token = await getToken({ req });
-  const userId = token?.id;
+  const token = await verifyToken({ req });
 
-  if (!userId) {
-    res.status(401).json({ response: "You must be logged in." });
+  if (typeof token === "string") {
+    res.status(401).json({ response: token });
     return null;
   }
+
+  const userId = token?.id;
 
   const user = await prisma.user.findUnique({
     where: {
@@ -29,11 +30,7 @@ export default async function verifyUser({
     },
     include: {
       subscriptions: true,
-    },
-  });
-  const ssoUser = await prisma.account.findFirst({
-    where: {
-      userId: userId,
+      parentSubscription: true,
     },
   });
 
@@ -42,8 +39,7 @@ export default async function verifyUser({
     return null;
   }
 
-  if (!user.username && !ssoUser) {
-    // SSO users don't need a username
+  if (!user.username) {
     res.status(401).json({
       response: "Username not found.",
     });
@@ -51,7 +47,7 @@ export default async function verifyUser({
   }
 
   if (STRIPE_SECRET_KEY) {
-    const subscribedUser = verifySubscription(user);
+    const subscribedUser = await verifySubscription(user);
 
     if (!subscribedUser) {
       res.status(401).json({

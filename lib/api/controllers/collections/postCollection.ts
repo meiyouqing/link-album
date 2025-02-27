@@ -1,45 +1,71 @@
 import { prisma } from "@/lib/api/db";
-import { CollectionIncludingMembersAndLinkCount } from "@/types/global";
 import createFolder from "@/lib/api/storage/createFolder";
+import {
+  PostCollectionSchema,
+  PostCollectionSchemaType,
+} from "@/lib/shared/schemaValidation";
 
 export default async function postCollection(
-  collection: CollectionIncludingMembersAndLinkCount,
+  body: PostCollectionSchemaType,
   userId: number
 ) {
-  if (!collection || collection.name.trim() === "")
+  const dataValidation = PostCollectionSchema.safeParse(body);
+
+  if (!dataValidation.success) {
     return {
-      response: "Please enter a valid collection.",
+      response: `Error: ${
+        dataValidation.error.issues[0].message
+      } [${dataValidation.error.issues[0].path.join(", ")}]`,
       status: 400,
     };
+  }
 
-  const findCollection = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
-    select: {
-      collections: {
-        where: {
-          name: collection.name,
-        },
+  const collection = dataValidation.data;
+
+  if (collection.parentId) {
+    const findParentCollection = await prisma.collection.findUnique({
+      where: {
+        id: collection.parentId,
       },
-    },
-  });
+      select: {
+        ownerId: true,
+      },
+    });
 
-  const checkIfCollectionExists = findCollection?.collections[0];
-
-  if (checkIfCollectionExists)
-    return { response: "Collection already exists.", status: 400 };
+    if (
+      findParentCollection?.ownerId !== userId ||
+      typeof collection.parentId !== "number"
+    )
+      return {
+        response: "You are not authorized to create a sub-collection here.",
+        status: 403,
+      };
+  }
 
   const newCollection = await prisma.collection.create({
     data: {
+      name: collection.name.trim(),
+      description: collection.description,
+      color: collection.color,
+      icon: collection.icon,
+      iconWeight: collection.iconWeight,
+      parent: collection.parentId
+        ? {
+            connect: {
+              id: collection.parentId,
+            },
+          }
+        : undefined,
       owner: {
         connect: {
           id: userId,
         },
       },
-      name: collection.name.trim(),
-      description: collection.description,
-      color: collection.color,
+      createdBy: {
+        connect: {
+          id: userId,
+        },
+      },
     },
     include: {
       _count: {
@@ -54,6 +80,17 @@ export default async function postCollection(
             },
           },
         },
+      },
+    },
+  });
+
+  await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      collectionOrder: {
+        push: newCollection.id,
       },
     },
   });

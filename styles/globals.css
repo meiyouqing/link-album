@@ -3,33 +3,39 @@
 @tailwind utilities;
 
 :root {
-  --my-color: #fff;
   --selection-color: #fff;
   --selection-bg-color: #fff;
 }
 
 [data-theme="dark"] {
-  --my-color: #000;
   color-scheme: dark;
   --selection-color: #000000;
   --selection-bg-color: #ffffff;
+  --default: 82.76% 0.101277 230.317893;
+  --red: 69.73% 0.168 22.43;
+  --rose: 75% 0.2 340;
+  --yellow: 90% 0.1 90;
+  --green: 88.58% 0.2465 140;
+  --orange: 80% 0.18 60;
+  --zinc: 88.45% 0.05 220;
 }
 
 [data-theme="light"] {
-  --my-color: #ffabc8;
   color-scheme: light;
   --selection-color: #ffffff;
   --selection-bg-color: #000000;
+  --default: 50% 0.1193 242.75;
+  --red: 49.7% 0.2026 22.43;
+  --rose: 55% 0.25 340;
+  --yellow: 69.58% 0.2 90;
+  --green: 60% 0.2 140;
+  --orange: 70% 0.22 60;
+  --zinc: 50% 0.07 220;
 }
 
 ::selection {
   background-color: var(--selection-bg-color);
   color: var(--selection-color);
-}
-
-html,
-body {
-  scroll-behavior: smooth;
 }
 
 /* Hide scrollbar */
@@ -39,6 +45,14 @@ body {
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.hide-color-picker {
+  opacity: 0;
+  display: block;
+  width: 32px;
+  height: 32px;
+  border: none;
 }
 
 .hyphens {
@@ -141,21 +155,35 @@ body {
 
 /* For react-colorful */
 .color-picker .react-colorful {
-  width: 100%;
-  height: 7.5rem;
+  height: 7rem;
+  width: 7rem;
 }
 .color-picker .react-colorful__hue {
   height: 1rem;
 }
 .color-picker .react-colorful__pointer {
-  width: 1.3rem;
-  height: 1.3rem;
+  width: 1rem;
+  height: 1rem;
+  border-width: 1px;
 }
 
 /* For the Link banner */
 .link-banner {
   border-radius: 1rem;
   height: fit-content;
+}
+
+.react-select__indicator-separator {
+  display: none;
+}
+
+.react-select__control--is-focused .react-select__dropdown-indicator,
+.react-select__control .react-select__dropdown-indicator,
+.react-select__control .react-select__dropdown-indicator:hover,
+.react-select__control .react-select__dropdown-indicator:focus,
+.react-select__control--is-focused .react-select__dropdown-indicator:hover,
+.react-select__control--is-focused .react-select__dropdown-indicator:focus {
+  color: oklch(var(--n));
 }
 
 /* Theme */
@@ -165,26 +193,18 @@ body {
     @apply bg-base-200 hover:border-neutral-content;
   }
 
+  .react-select-container .react-select__control--is-focused {
+    @apply border-primary hover:border-primary;
+  }
+
   .react-select-container .react-select__menu {
     @apply bg-base-100 border-neutral-content border rounded-md;
   }
-  /* 
-  .react-select-container .react-select__menu-list {
-    @apply h-20;
-  } */
 
   .react-select-container .react-select__input-container,
   .react-select-container .react-select__single-value {
     @apply text-base-content;
   }
-}
-
-.primary-btn-gradient {
-  box-shadow: inset 0px -9px 10px oklch(var(--p));
-}
-
-.primary-btn-gradient:hover {
-  box-shadow: inset 0px -20px 40px #00436c;
 }
 
 .line-break * {
@@ -258,32 +278,6 @@ body {
 [data-theme="light"] .reader-view pre {
   background-color: rgb(230, 230, 230);
   border-radius: 8px;
-}
-
-.rainbow {
-  background: linear-gradient(
-    45deg,
-    #ff00004b,
-    #ff99004b,
-    #33cc334b,
-    #0099cc4b,
-    #9900cc4b,
-    #ff33cc4b
-  );
-  background-size: 400% 400%;
-  animation: rainbow 30s linear infinite;
-}
-
-@keyframes rainbow {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
 }
 
 .custom-file-input::file-selector-button {

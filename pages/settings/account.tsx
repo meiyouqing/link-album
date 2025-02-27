@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import useAccountStore from "@/store/account";
+import { useState, useEffect, ChangeEvent } from "react";
 import { AccountSettings } from "@/types/global";
 import { toast } from "react-hot-toast";
 import SettingsLayout from "@/layouts/SettingsLayout";
@@ -8,19 +7,27 @@ import { resizeImage } from "@/lib/client/resizeImage";
 import ProfilePhoto from "@/components/ProfilePhoto";
 import SubmitButton from "@/components/SubmitButton";
 import React from "react";
-import { MigrationFormat, MigrationRequest } from "@/types/global";
 import Link from "next/link";
 import Checkbox from "@/components/Checkbox";
+import { dropdownTriggerer } from "@/lib/client/utils";
+import EmailChangeVerificationModal from "@/components/ModalContent/EmailChangeVerificationModal";
+import Button from "@/components/ui/Button";
+import { i18n } from "next-i18next.config";
+import { useTranslation } from "next-i18next";
+import getServerSideProps from "@/lib/client/getServerSideProps";
+import { useUpdateUser, useUser } from "@/hooks/store/user";
+import { z } from "zod";
+import ImportDropdown from "@/components/ImportDropdown";
+import { useConfig } from "@/hooks/store/config";
 
 export default function Account() {
-  const emailEnabled = process.env.NEXT_PUBLIC_EMAIL_PROVIDER;
-
+  const [emailChangeVerificationModal, setEmailChangeVerificationModal] =
+    useState(false);
   const [submitLoader, setSubmitLoader] = useState(false);
-
-  const { account, updateAccount } = useAccountStore();
-
+  const { data: account } = useUser();
+  const updateUser = useUpdateUser();
   const [user, setUser] = useState<AccountSettings>(
-    !objectIsEmpty(account)
+    account.id
       ? account
       : ({
           // @ts-ignore
@@ -29,24 +36,34 @@ export default function Account() {
           username: "",
           email: "",
           emailVerified: null,
+          password: undefined,
           image: "",
-          isPrivate: true,
+          isPrivate: false,
           // @ts-ignore
           createdAt: null,
           whitelistedUsers: [],
         } as unknown as AccountSettings)
   );
 
-  function objectIsEmpty(obj: object) {
-    return Object.keys(obj).length === 0;
-  }
+  const { data: config } = useConfig();
+
+  const { t } = useTranslation();
+
+  const [whitelistedUsersTextbox, setWhiteListedUsersTextbox] = useState("");
 
   useEffect(() => {
-    if (!objectIsEmpty(account)) setUser({ ...account });
-  }, [account]);
+    if (!account.id) return;
 
-  const handleImageUpload = async (e: any) => {
-    const file: File = e.target.files[0];
+    setUser({
+      ...account,
+      whitelistedUsers: stringToArray(whitelistedUsersTextbox),
+    });
+  }, [account, whitelistedUsersTextbox]);
+
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return toast.error(t("image_upload_no_file_error"));
+
     const fileExtension = file.name.split(".").pop()?.toLowerCase();
     const allowedExtensions = ["png", "jpeg", "jpg"];
     if (allowedExtensions.includes(fileExtension as string)) {
@@ -60,96 +77,72 @@ export default function Account() {
         };
         reader.readAsDataURL(resizedFile);
       } else {
-        toast.error("Please select a PNG or JPEG file thats less than 1MB.");
+        toast.error(t("image_upload_size_error"));
       }
     } else {
-      toast.error("Invalid file format.");
+      toast.error(t("image_upload_format_error"));
     }
   };
 
-  const submit = async () => {
-    setSubmitLoader(true);
-
-    const load = toast.loading("Applying...");
-
-    const response = await updateAccount({
-      ...user,
-    });
-
-    toast.dismiss(load);
-
-    if (response.ok) {
-      toast.success("Settings Applied!");
-    } else toast.error(response.data as string);
-    setSubmitLoader(false);
-  };
-
-  const importBookmarks = async (e: any, format: MigrationFormat) => {
-    setSubmitLoader(true);
-
-    const file: File = e.target.files[0];
-
-    if (file) {
-      var reader = new FileReader();
-      reader.readAsText(file, "UTF-8");
-      reader.onload = async function (e) {
-        const load = toast.loading("Importing...");
-
-        const request: string = e.target?.result as string;
-
-        const body: MigrationRequest = {
-          format,
-          data: request,
-        };
-
-        const response = await fetch("/api/v1/migration", {
-          method: "POST",
-          body: JSON.stringify(body),
-        });
-
-        const data = await response.json();
-
-        toast.dismiss(load);
-
-        if (response.ok) {
-          toast.success("Imported the Bookmarks! Reloading the page...");
-          setTimeout(() => {
-            location.reload();
-          }, 2000);
-        } else toast.error(data.response as string);
-      };
-      reader.onerror = function (e) {
-        console.log("Error:", e);
-      };
+  const submit = async (password?: string) => {
+    if (!/^[a-z0-9_-]{3,50}$/.test(user.username || "")) {
+      return toast.error(t("username_invalid_guide"));
     }
 
-    setSubmitLoader(false);
-  };
+    const emailSchema = z.string().trim().email().toLowerCase();
+    const emailValidation = emailSchema.safeParse(user.email || "");
+    if (config?.EMAIL_PROVIDER && !emailValidation.success) {
+      return toast.error(t("email_invalid"));
+    }
 
-  const [whitelistedUsersTextbox, setWhiteListedUsersTextbox] = useState("");
+    setSubmitLoader(true);
+
+    const load = toast.loading(t("applying_settings"));
+
+    await updateUser.mutateAsync(
+      {
+        ...user,
+        password: password ? password : undefined,
+      },
+      {
+        onSettled: (data, error) => {
+          setSubmitLoader(false);
+          toast.dismiss(load);
+
+          if (error) {
+            toast.error(error.message);
+          } else {
+            if (data.response.email !== user.email) {
+              toast.success(t("email_change_request"));
+              setEmailChangeVerificationModal(false);
+            }
+
+            toast.success(t("settings_applied"));
+          }
+        },
+      }
+    );
+
+    if (user.locale !== account.locale) {
+      setTimeout(() => {
+        location.reload();
+      }, 1000);
+    }
+  };
 
   useEffect(() => {
     setWhiteListedUsersTextbox(account?.whitelistedUsers?.join(", "));
   }, [account]);
 
-  useEffect(() => {
-    setUser({
-      ...user,
-      whitelistedUsers: stringToArray(whitelistedUsersTextbox),
-    });
-  }, [whitelistedUsersTextbox]);
-
   const stringToArray = (str: string) => {
-    const stringWithoutSpaces = str?.replace(/\s+/g, "");
-
-    const wordsArray = stringWithoutSpaces?.split(",");
-
-    return wordsArray;
+    return str?.replace(/\s+/g, "").split(",");
   };
 
   return (
     <SettingsLayout>
-      <p className="capitalize text-3xl font-thin inline">Account Settings</p>
+      <p className="capitalize text-3xl font-thin inline">
+        {t("accountSettings")}
+      </p>
 
       <div className="divider my-3"></div>
 
@@ -157,7 +150,7 @@ export default function Account() {
         <div className="grid sm:grid-cols-2 gap-3 auto-rows-auto">
           <div className="flex flex-col gap-3">
             <div>
-              <p className="mb-2">Display Name</p>
+              <p className="mb-2">{t("display_name")}</p>
               <TextInput
                 value={user.name || ""}
                 className="bg-base-200"
@@ -165,178 +158,125 @@ export default function Account() {
               />
             </div>
             <div>
-              <p className="mb-2">Username</p>
+              <p className="mb-2">{t("username")}</p>
               <TextInput
                 value={user.username || ""}
                 className="bg-base-200"
                 onChange={(e) => setUser({ ...user, username: e.target.value })}
               />
             </div>
-
-            {emailEnabled ? (
+            {config?.EMAIL_PROVIDER && (
               <div>
-                <p className="mb-2">Email</p>
-                {user.email !== account.email &&
-                process.env.NEXT_PUBLIC_STRIPE === "true" ? (
-                  <p className="text-neutral mb-2 text-sm">
-                    Updating this field will change your billing email as well
-                  </p>
-                ) : undefined}
+                <p className="mb-2">{t("email")}</p>
                 <TextInput
                   value={user.email || ""}
+                  type="email"
                   className="bg-base-200"
                   onChange={(e) => setUser({ ...user, email: e.target.value })}
                 />
               </div>
-            ) : undefined}
+            )}
+            <div>
+              <p className="mb-2">{t("language")}</p>
+              <select
+                value={user.locale || ""}
+                onChange={(e) => {
+                  setUser({ ...user, locale: e.target.value });
+                }}
+                className="select border border-neutral-content focus:outline-none focus:border-primary duration-100 w-full bg-base-200 rounded-[0.375rem] min-h-0 h-[2.625rem] leading-4 p-2"
+              >
+                {i18n.locales.map((locale) => (
+                  <option key={locale} value={locale} className="capitalize">
+                    {new Intl.DisplayNames(locale, { type: "language" }).of(
+                      locale
+                    ) || ""}
+                  </option>
+                ))}
+                <option disabled>{t("more_coming_soon")}</option>
+              </select>
+            </div>
           </div>
 
-          <div className="sm:row-span-2 sm:justify-self-center mx-auto my-3">
-            <p className="mb-2 text-center">Profile Photo</p>
-            <div className="w-28 h-28 flex items-center justify-center rounded-full relative">
+          <div className="sm:row-span-2 sm:justify-self-center my-3">
+            <p className="mb-2 sm:text-center">{t("profile_photo")}</p>
+            <div className="w-28 h-28 flex gap-3 sm:flex-col items-center">
               <ProfilePhoto
                 priority={true}
                 src={user.image ? user.image : undefined}
                 large={true}
               />
-              {user.image && (
-                <div
-                  onClick={() =>
-                    setUser({
-                      ...user,
-                      image: "",
-                    })
-                  }
-                  className="absolute top-1 left-1 btn btn-xs btn-circle btn-neutral btn-outline bg-base-100"
-                >
-                  <i className="bi-x"></i>
-                </div>
-              )}
-              <div className="absolute -bottom-3 left-0 right-0 mx-auto w-fit text-center">
-                <label className="btn btn-xs btn-neutral btn-outline bg-base-100">
-                  Browse...
-                  <input
-                    type="file"
-                    name="photo"
-                    id="upload-photo"
-                    accept=".png, .jpeg, .jpg"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div>
-          <div className="flex items-center gap-2 w-full rounded-md h-8">
-            <p className="truncate w-full pr-7 text-3xl font-thin">
-              Import & Export
-            </p>
-          </div>
-
-          <div className="divider my-3"></div>
-
-          <div className="flex gap-3 flex-col">
-            <div>
-              <p className="mb-2">Import your data from other platforms.</p>
               <div className="dropdown dropdown-bottom">
-                <div
+                <Button
                   tabIndex={0}
                   role="button"
-                  className="flex gap-2 text-sm btn btn-outline btn-neutral group"
-                  id="import-dropdown"
+                  size="small"
+                  intent="secondary"
+                  onMouseDown={dropdownTriggerer}
+                  className="text-sm"
                 >
-                  <i className="bi-cloud-upload text-xl duration-100"></i>
-                  <p>Import From</p>
-                </div>
-                <ul className="shadow menu dropdown-content z-[1] bg-base-200 border border-neutral-content rounded-box mt-1 w-60">
+                  <i className="bi-pencil-square text-md duration-100"></i>
+                  {t("edit")}
+                </Button>
+                <ul className="shadow menu dropdown-content z-[1] bg-base-200 border border-neutral-content rounded-box mt-1">
                   <li>
                     <label
                       tabIndex={0}
                       role="button"
-                      htmlFor="import-linkwarden-file"
-                      title="JSON File"
+                      className="whitespace-nowrap"
                     >
-                      From Linkwarden
+                      {t("upload_new_photo")}
                       <input
                         type="file"
                         name="photo"
-                        id="import-linkwarden-file"
-                        accept=".json"
+                        id="upload-photo"
+                        accept=".png, .jpeg, .jpg"
                         className="hidden"
-                        onChange={(e) =>
-                          importBookmarks(e, MigrationFormat.linkwarden)
-                        }
+                        onChange={handleImageUpload}
                       />
                     </label>
                   </li>
-                  <li>
-                    <label
-                      tabIndex={0}
-                      role="button"
-                      htmlFor="import-html-file"
-                      title="HTML File"
-                    >
-                      From Bookmarks HTML file
-                      <input
-                        type="file"
-                        name="photo"
-                        id="import-html-file"
-                        accept=".html"
-                        className="hidden"
-                        onChange={(e) =>
-                          importBookmarks(e, MigrationFormat.htmlFile)
+                  {user.image && (
+                    <li>
+                      <div
+                        tabIndex={0}
+                        role="button"
+                        onClick={() =>
+                          setUser({
+                            ...user,
+                            image: "",
+                          })
                         }
-                      />
-                    </label>
-                  </li>
+                        className="whitespace-nowrap"
+                      >
+                        {t("remove_photo")}
+                      </div>
+                    </li>
+                  )}
                 </ul>
               </div>
             </div>
-
-            <div>
-              <p className="mb-2">Download your data instantly.</p>
-              <Link className="w-fit" href="/api/v1/migration">
-                <div className="flex w-fit gap-2 text-sm btn btn-outline btn-neutral group">
-                  <i className="bi-cloud-download text-xl duration-100"></i>
-                  <p>Export Data</p>
-                </div>
-              </Link>
-            </div>
           </div>
         </div>
 
-        <div>
-          <div className="flex items-center gap-2 w-full rounded-md h-8">
-            <p className="truncate w-full pr-7 text-3xl font-thin">
-              Profile Visibility
-            </p>
-          </div>
-
-          <div className="divider my-3"></div>
-
+        <div className="sm:-mt-3">
           <Checkbox
-            label="Make profile private"
+            label={t("make_profile_private")}
             state={user.isPrivate}
             onClick={() => setUser({ ...user, isPrivate: !user.isPrivate })}
           />
 
-          <p className="text-neutral text-sm">
-            This will limit who can find and add you to new Collections.
-          </p>
+          <p className="text-neutral text-sm">{t("profile_privacy_info")}</p>
 
           {user.isPrivate && (
             <div className="pl-5">
-              <p className="mt-2">Whitelisted Users</p>
+              <p className="mt-2">{t("whitelisted_users")}</p>
               <p className="text-neutral text-sm mb-3">
-                Please provide the Username of the users you wish to grant
-                visibility to your profile. Separated by comma.
+                {t("whitelisted_users_info")}
               </p>
               <textarea
                 className="w-full resize-none border rounded-md duration-100 bg-base-200 p-2 outline-none border-neutral-content focus:border-primary"
-                placeholder="Your profile is hidden from everyone right now..."
+                placeholder={t("whitelisted_users_placeholder")}
                 value={whitelistedUsersTextbox}
                 onChange={(e) => setWhiteListedUsersTextbox(e.target.value)}
               />
@@ -345,39 +285,76 @@ export default function Account() {
         </div>
 
         <SubmitButton
-          onClick={submit}
+          onClick={() => {
+            if (account.email !== user.email) {
+              setEmailChangeVerificationModal(true);
+            } else {
+              submit();
+            }
+          }}
           loading={submitLoader}
-          label="Save"
-          className="mt-2 mx-auto lg:mx-0"
+          label={t("save_changes")}
+          className="mt-2 w-full sm:w-fit"
         />
 
         <div>
           <div className="flex items-center gap-2 w-full rounded-md h-8">
+            <p className="truncate w-full pr-7 text-3xl font-thin">
+              {t("import_export")}
+            </p>
+          </div>
+
+          <div className="divider my-3"></div>
+
+          <div className="flex gap-3 flex-col">
+            <div>
+              <p className="mb-2">{t("import_data")}</p>
+              <ImportDropdown />
+            </div>
+
+            <div>
+              <p className="mb-2">{t("download_data")}</p>
+              <Link className="w-fit" href="/api/v1/migration">
+                <div className="select-none relative duration-200 rounded-lg text-sm text-center w-fit flex justify-center items-center gap-2 disabled:pointer-events-none disabled:opacity-50 bg-neutral-content text-secondary-foreground hover:bg-neutral-content/80 border border-neutral/30 h-10 px-4 py-2">
+                  <i className="bi-cloud-download text-xl duration-100"></i>
+                  <p>{t("export_data")}</p>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 w-full rounded-md h-8">
             <p className="text-red-500 dark:text-red-500 truncate w-full pr-7 text-3xl font-thin">
-              Delete Account
+              {t("delete_account")}
             </p>
           </div>
 
           <div className="divider my-3"></div>
 
           <p>
-            This will permanently delete ALL the Links, Collections, Tags, and
-            archived data you own.{" "}
-            {process.env.NEXT_PUBLIC_STRIPE
-              ? "It will also cancel your subscription. "
-              : undefined}{" "}
-            You will be prompted to enter your password before the deletion
-            process.
+            {t("delete_account_warning")}
+            {process.env.NEXT_PUBLIC_STRIPE &&
+              " " + t("cancel_subscription_notice")}
           </p>
         </div>
 
-        <Link
-          href="/settings/delete"
-          className="mx-auto lg:mx-0 text-white flex items-center gap-2 py-1 px-3 rounded-md text-lg tracking-wide select-none font-semibold duration-100 w-fit bg-red-500 hover:bg-red-400 cursor-pointer"
-        >
-          <p className="text-center w-full">Delete Your Account</p>
+        <Link href="/settings/delete" className="underline">
+          {t("account_deletion_page")}
         </Link>
       </div>
+
+      {emailChangeVerificationModal && (
+        <EmailChangeVerificationModal
+          onClose={() => setEmailChangeVerificationModal(false)}
+          onSubmit={submit}
+          oldEmail={account.email || ""}
+          newEmail={user.email || ""}
+        />
+      )}
     </SettingsLayout>
   );
 }
+
+export { getServerSideProps };
