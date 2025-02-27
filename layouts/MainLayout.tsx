@@ -11,7 +11,7 @@ interface Props {
 export default function MainLayout({ children }: Props) {
   const showAnnouncementBar = localStorage.getItem("showAnnouncementBar");
   const [showAnnouncement, setShowAnnouncement] = useState(
-    showAnnouncementBar ? showAnnouncementBar === "true" : true
+    showAnnouncementBar ? showAnnouncementBar === "true" : false
   );
 
   useEffect(() => {
@@ -19,13 +19,13 @@ export default function MainLayout({ children }: Props) {
   }, []);
 
   useEffect(() => {
-    if (showAnnouncement) {
-      localStorage.setItem("showAnnouncementBar", "true");
-      setShowAnnouncement(true);
-    } else if (!showAnnouncement) {
-      localStorage.setItem("showAnnouncementBar", "false");
-      setShowAnnouncement(false);
-    }
+    // Force the AnnouncementBar to be hidden by default on mount
+    localStorage.setItem("showAnnouncementBar", "false");
+    setShowAnnouncement(false);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("showAnnouncementBar", showAnnouncement.toString());
   }, [showAnnouncement]);
 
   const toggleAnnouncementBar = () => {
