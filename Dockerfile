@@ -47,8 +47,8 @@ HEALTHCHECK --interval=30s \
             --timeout=5s \
             --start-period=10s \
             --retries=3 \
-            CMD [ "/usr/bin/curl", "--silent", "--fail", "http://127.0.0.1:3000/" ]
+            CMD [ "/usr/bin/curl", "--silent", "--fail", "http://127.0.0.1:3001/" ]
 
-EXPOSE 3000
+EXPOSE 3001
 
 CMD yarn prisma migrate deploy && yarn start

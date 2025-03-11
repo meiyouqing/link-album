@@ -10,7 +10,7 @@
     "seed": "node ./prisma/seed.js"
   },
   "scripts": {
-    "dev": "concurrently -k -P \"next dev {@}\" \"yarn worker:dev\" --",
+    "dev": "concurrently -k -P \"next dev -p 3001 {@}\" \"yarn worker:dev\" --",
     "worker:dev": "nodemon --skip-project scripts/worker.ts",
     "worker:prod": "ts-node --transpile-only --skip-project scripts/worker.ts",
     "start": "concurrently -P \"next start {@}\" \"yarn worker:prod\" --",
