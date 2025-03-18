@@ -1,4 +1,5 @@
 # dependencies
+/supertokens_example
 /node_modules
 /.pnp
 .pnp.js

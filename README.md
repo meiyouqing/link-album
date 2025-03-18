@@ -1,6 +1,6 @@
 <div align="center">
   <img src="./assets/logo.png" width="100px" />
-  <h1>Linkwarden</h1>
+  <h1>link album</h1>
   <h3>Bookmark Preservation for Individuals and Teams</h3>
 
 <a href="https://discord.com/invite/CtuYV47nuJ"><img src="https://img.shields.io/discord/1117993124669702164?logo=discord&style=flat" alt="Discord"></a>
