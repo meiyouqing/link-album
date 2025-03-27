@@ -16,6 +16,8 @@ FROM node:18.18-bullseye-slim AS main-app
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+ENV NODE_OPTIONS=--max_old_space_size=2048
+
 RUN mkdir /data
 
 WORKDIR /data
