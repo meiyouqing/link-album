@@ -135,7 +135,6 @@ if (process.env.NEXT_PUBLIC_CREDENTIALS_ENABLED !== "false") {
 if (emailEnabled) {
   providers.push(
     EmailProvider({
-      id: "email",
       server: process.env.EMAIL_SERVER,
       from: process.env.EMAIL_FROM,
       maxAge: 1200,
@@ -162,7 +161,6 @@ if (emailEnabled) {
       },
     }),
     EmailProvider({
-      id: "invite",
       server: process.env.EMAIL_SERVER,
       from: process.env.EMAIL_FROM,
       maxAge: 1200,

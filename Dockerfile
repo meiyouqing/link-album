@@ -2,7 +2,9 @@
 # Purpose: Uses the Rust image to build monolith
 # Notes:
 #  - Fine to leave extra here, as only the resulting binary is copied out
-FROM docker.io/rust:1.80-bullseye AS monolith-builder
+FROM docker.io/rust:1.81-bullseye AS monolith-builder
+
+ENV OPENSSL_NO_ASM=1
 
 RUN set -eux && cargo install --locked monolith
 
@@ -40,8 +42,8 @@ RUN set -eux && \
 
 COPY . .
 
-RUN yarn prisma generate && \
-    yarn build
+RUN yarn prisma generate
+RUN yarn build
 
 HEALTHCHECK --interval=30s \
             --timeout=5s \
