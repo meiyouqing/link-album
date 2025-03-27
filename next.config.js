@@ -21,7 +21,10 @@ const nextConfig = {
   },
   env: {
     version,
+    NEXT_DISABLE_TELEMETRY: "1",
   },
+  swcMinify: true,
+  productionBrowserSourceMaps: false,
 };
 
 module.exports = nextConfig;
