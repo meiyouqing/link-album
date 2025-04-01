@@ -13,7 +13,7 @@
     "dev": "concurrently -k -P \"next dev -p 3001 {@}\" \"yarn worker:dev\" --",
     "worker:dev": "nodemon --skip-project scripts/worker.ts",
     "worker:prod": "ts-node --transpile-only --skip-project scripts/worker.ts",
-    "start": "concurrently -P \"next start {@}\" \"yarn worker:prod\" --",
+    "start": "concurrently -P \"next start -p 3001 {@}\" \"yarn worker:prod\" --",
     "build": "next build",
     "lint": "next lint",
     "e2e": "playwright test e2e",
