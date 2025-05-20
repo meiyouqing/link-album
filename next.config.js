@@ -5,7 +5,7 @@ const { i18n } = require("./next-i18next.config");
 const nextConfig = {
   i18n,
   reactStrictMode: true,
-  staticPageGenerationTimeout: 1000,
+  staticPageGenerationTimeout: 10000,
   images: {
     // For fetching the favicons
     domains: ["t2.gstatic.com"],
@@ -13,6 +13,11 @@ const nextConfig = {
     // For profile pictures (Google OAuth)
     remotePatterns: [
       {
+        protocol: "https",
+        hostname: "*.kukecloud.com",
+      },
+      {
+        protocol: "https",
         hostname: "*.googleusercontent.com",
       },
     ],

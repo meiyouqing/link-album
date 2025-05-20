@@ -609,7 +609,7 @@ export default function LinkDetails({
                   </div>
                 ) : undefined}
 
-                {link.url && (
+                {/* {link.url && (
                   <Link
                     href={`https://web.archive.org/web/${link?.url?.replace(
                       /(^\w+:|^)\/\//,
@@ -623,7 +623,7 @@ export default function LinkDetails({
                     </p>
                     <i className="bi-box-arrow-up-right" />
                   </Link>
-                )}
+                )} */}
               </div>
             </div>
           )}

@@ -4,17 +4,17 @@ import { prisma } from "../db";
 import { Link } from "@prisma/client";
 
 const handleMonolith = async (link: Link, content: string) => {
-  if (!link.url) return;
+  // Early return if monolith feature is disabled (default) or if URL is missing
+  if (!process.env.ENABLE_MONOLITH || process.env.ENABLE_MONOLITH === 'false' || !link.url) return;
 
   try {
     let html = execSync(
-      `monolith - -I -b "${link.url}" ${
-        process.env.MONOLITH_CUSTOM_OPTIONS || "-j -F -s"
+      `monolith "${link.url}" ${
+        process.env.MONOLITH_CUSTOM_OPTIONS || "-j -F"
       } -o -`,
       {
         timeout: 120000,
         maxBuffer: 1024 * 1024 * Number(process.env.MONOLITH_MAX_BUFFER || 5),
-        input: content,
       }
     );
 
@@ -39,7 +39,7 @@ const handleMonolith = async (link: Link, content: string) => {
       });
     });
   } catch (err) {
-    console.log("Uncaught Monolith error...");
+    console.error("Uncaught Monolith error:", err);
   }
 };
 
