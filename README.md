@@ -1,22 +1,14 @@
 <div align="center">
-  <img src="./assets/logo.png" width="100px" />
+  <img src="./public/apple-touch-icon.png" width="100px" />
   <h1>Link Album</h1>
   <h3>Bookmark Preservation for Individuals and Teams</h3>
-
-<a href="https://discord.com/invite/CtuYV47nuJ"><img src="https://img.shields.io/discord/1117993124669702164?logo=discord&style=flat" alt="Discord"></a>
-<a href="https://twitter.com/LinkwardenHQ"><img src="https://img.shields.io/twitter/follow/linkwarden" alt="Twitter"></a> <a href="https://news.ycombinator.com/item?id=36942308"><img src="https://img.shields.io/badge/Hacker%20News-280-%23FF6600"></img></a>
-
-<a href="https://github.com/linkwarden/linkwarden/releases"><img alt="GitHub release" src="https://img.shields.io/github/v/release/linkwarden/linkwarden"></a>
-<a href="https://opencollective.com/linkwarden"><img src="https://img.shields.io/opencollective/all/linkwarden" alt="Open Collective"></a>
-
 </div>
 
 <div align='center'>
 
-[« LAUNCH DEMO »](https://demo.linkwarden.app)
+[« LAUNCH DEMO »](https://tool.historyvine.net)
 
-[Cloud](https://cloud.linkwarden.app) · [Website](https://linkwarden.app) · [Features](https://github.com/linkwarden/linkwarden#features) · [Docs](https://docs.linkwarden.app)
-
+· [Website](https://linkalbum.top) 
 </div>
 
 ## Intro & motivation
