@@ -1,8 +1,8 @@
 import useLocalSettingsStore from "@/store/localSettings";
-import Image from "next/image";
 import Link from "next/link";
 import React, { ReactNode } from "react";
 import { Trans } from "next-i18next";
+import Logo from "@/components/Logo";
 
 interface Props {
   text?: string;
@@ -24,14 +24,9 @@ export default function CenteredForm({
     >
       <div className="m-auto flex flex-col gap-2 w-full">
         {settings.theme && (
-          <Image
-            src={`/linkwarden_${
-              settings.theme === "dark" ? "dark" : "light"
-            }.png`}
-            width={640}
-            height={136}
-            alt="Linkwarden"
-            className="h-12 w-fit mx-auto"
+          <Logo 
+            size="lg" 
+            theme={settings.theme === "dark" ? "dark" : "light"}
           />
         )}
         {text && (
@@ -45,7 +40,7 @@ export default function CenteredForm({
             values={{ date: new Date().getFullYear() }}
             i18nKey="all_rights_reserved"
             components={[
-              <Link href="https://linkwarden.app" className="font-semibold" />,
+              <Link href="https://linkalbum.top" className="font-semibold" />,
             ]}
           />
         </p>

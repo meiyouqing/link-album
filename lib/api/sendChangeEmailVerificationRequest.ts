@@ -41,11 +41,11 @@ export default async function sendChangeEmailVerificationRequest(
 
   transporter.sendMail({
     from: {
-      name: "Linkwarden",
+      name: "Link Album",
       address: process.env.EMAIL_FROM as string,
     },
     to: newEmail,
-    subject: "Verify your new Linkwarden email address",
+    subject: "Verify your new Link Album email address",
     html: emailTemplate({
       user,
       baseUrl: process.env.BASE_URL,

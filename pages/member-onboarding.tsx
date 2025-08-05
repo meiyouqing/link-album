@@ -115,13 +115,13 @@ export default function MemberOnboarding() {
                   i18nKey="sign_up_agreement"
                   components={[
                     <Link
-                      href="https://linkwarden.app/tos"
+                      href="https://linkalbum.top/tos"
                       className="font-semibold"
                       data-testid="terms-of-service-link"
                       key={0}
                     />,
                     <Link
-                      href="https://linkwarden.app/privacy-policy"
+                      href="https://linkalbum.top/privacy-policy"
                       className="font-semibold"
                       data-testid="privacy-policy-link"
                       key={1}

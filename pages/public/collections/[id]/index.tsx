@@ -18,6 +18,7 @@ import useLocalSettingsStore from "@/store/localSettings";
 import SearchBar from "@/components/SearchBar";
 import EditCollectionSharingModal from "@/components/ModalContent/EditCollectionSharingModal";
 import { useTranslation } from "next-i18next";
+import Logo from "@/components/Logo";
 import getServerSideProps from "@/lib/client/getServerSideProps";
 import LinkListOptions from "@/components/LinkListOptions";
 import { usePublicLinks } from "@/hooks/store/publicLinks";
@@ -128,10 +129,10 @@ export default function PublicCollections() {
       >
         {collection && (
           <Head>
-            <title>{collection.name} | Linkwarden</title>
+            <title>{collection.name} | Link Album</title>
             <meta
               property="og:title"
-              content={`${collection.name} | Linkwarden`}
+              content={`${collection.name} | Link Album`}
               key="title"
             />
           </Head>
@@ -211,13 +212,11 @@ export default function PublicCollections() {
                 className="tooltip tooltip-left w-fit"
                 data-tip={t("list_created_with_linkwarden")}
               >
-                <Link href="https://linkwarden.app/" target="_blank">
-                  <Image
-                    src={`/icon.png`}
-                    width={551}
-                    height={551}
-                    alt={t("linkwarden_icon")}
-                    className="h-8 w-fit mx-auto rounded"
+                <Link href="https://linkalbum.top/" target="_blank">
+                  <Logo 
+                    size="sm" 
+                    theme={settings.theme === "dark" ? "dark" : "light"}
+                    className="rounded"
                   />
                 </Link>
               </div>
@@ -322,7 +321,7 @@ export default function PublicCollections() {
             )}
 
             {/* <p className="text-center text-neutral">
-        List created with <span className="text-black">Linkwarden.</span>
+        List created with <span className="text-black">Link Album.</span>
         </p> */}
           </div>
         </div>

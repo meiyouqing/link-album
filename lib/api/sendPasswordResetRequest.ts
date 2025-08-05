@@ -30,11 +30,11 @@ export default async function sendPasswordResetRequest(
 
   transporter.sendMail({
     from: {
-      name: "Linkwarden",
+      name: "Link Album",
       address: process.env.EMAIL_FROM as string,
     },
     to: email,
-    subject: "Linkwarden: Reset password instructions",
+    subject: "Link Album: Reset password instructions",
     html: emailTemplate({
       user,
       baseUrl: process.env.BASE_URL,

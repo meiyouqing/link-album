@@ -29,7 +29,7 @@ export default async function sendVerificationRequest({
   const result = await transporter.sendMail({
     to: identifier,
     from: {
-      name: "Linkwarden",
+      name: "Link Album",
       address: from as string,
     },
     subject: `Please verify your email address`,

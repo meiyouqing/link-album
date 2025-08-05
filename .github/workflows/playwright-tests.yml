@@ -1,4 +1,4 @@
-name: Linkwarden Playwright Tests
+name: Link Album Playwright Tests
 
 on:
   push:
@@ -15,19 +15,19 @@ env:
   PGPASSWORD: password
   PGDATABASE: postgres
 
-  TEST_POSTGRES_USER: test_linkwarden_user
+  TEST_POSTGRES_USER: test_Linkalbum_user
   TEST_POSTGRES_PASSWORD: password
-  TEST_POSTGRES_DATABASE: test_linkwarden_db
-  TEST_POSTGRES_DATABASE_TEMPLATE: test_linkwarden_db_template
+  TEST_POSTGRES_DATABASE: test_Linkalbum_db
+  TEST_POSTGRES_DATABASE_TEMPLATE: test_Linkalbum_db_template
   TEST_POSTGRES_HOST: localhost
   TEST_POSTGREST_PORT: 5432
-  PRODUCTION_POSTGRES_DATABASE: linkwarden_db
+  PRODUCTION_POSTGRES_DATABASE: Linkalbum_db
 
   NEXTAUTH_SECRET: very_sensitive_secret
   NEXTAUTH_URL: http://localhost:3000/api/v1/auth
 
   # Manual installation database settings
-  DATABASE_URL: postgresql://test_linkwarden_user:password@localhost:5432/test_linkwarden_db
+  DATABASE_URL: postgresql://test_Linkalbum_user:password@localhost:5432/test_Linkalbum_db
 
   # Docker installation database settings
   POSTGRES_PASSWORD: password
@@ -129,7 +129,7 @@ jobs:
           yarn build
           yarn prisma migrate deploy
 
-      - name: Start linkwarden server and worker
+      - name: Start Linkalbum server and worker
         run: yarn start &
 
       - name: Run Tests

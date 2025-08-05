@@ -1,11 +1,11 @@
 # Architecture
 
-This is a summary of the architecture of Linkwarden. It's intended as a primer for collaborators to get a high-level understanding of the project.
+This is a summary of the architecture of Link Album. It's intended as a primer for collaborators to get a high-level understanding of the project.
 
-When you start Linkwarden, there are mainly two components that run:
+When you start Link Album, there are mainly two components that run:
 
 - The NextJS app, This is the main app and it's responsible for serving the frontend and handling the API routes.
-- [The Background Worker](https://github.com/linkwarden/linkwarden/blob/main/scripts/worker.ts), This is a separate `ts-node` process that runs in the background and is responsible for archiving links.
+- [The Background Worker](https://github.com/Linkalbum/Linkalbum/blob/main/scripts/worker.ts), This is a separate `ts-node` process that runs in the background and is responsible for archiving links.
 
 ## Main Tech Stack
 
@@ -22,7 +22,7 @@ When you start Linkwarden, there are mainly two components that run:
 Here's a summary of the main files and folders in the project:
 
 ```
-linkwarden
+Linkalbum
 ├── components         # React components
 ├── hooks              # React reusable hooks
 ├── layouts            # Layouts for pages
@@ -42,4 +42,4 @@ linkwarden
 
 ## Versioning
 
-We use semantic versioning for the project. You can track the changes from the [Releases](https://github.com/linkwarden/linkwarden/releases).
+We use semantic versioning for the project. You can track the changes from the [Releases](https://github.com/Linkalbum/Linkalbum/releases).

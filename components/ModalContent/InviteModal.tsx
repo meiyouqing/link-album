@@ -108,7 +108,7 @@ export default function InviteModal({ onClose }: Props) {
               })}
             </p>
             <Link
-              href="https://docs.linkwarden.app/billing/seats#how-seats-affect-billing"
+              href="https://docs.linkalbum.top/billing/seats#how-seats-affect-billing"
               className="font-semibold whitespace-nowrap hover:opacity-80 duration-100"
               target="_blank"
             >

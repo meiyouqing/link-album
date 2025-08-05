@@ -1,6 +1,6 @@
 # Security
 
-The Linkwarden team and community take security bugs in Linkwarden seriously. We appreciate your efforts to responsibly disclose your findings, and will make every effort to acknowledge your contributions.
+The Link Album team and community take security bugs in Link Album seriously. We appreciate your efforts to responsibly disclose your findings, and will make every effort to acknowledge your contributions.
 
 # Reporting Security Issues
 

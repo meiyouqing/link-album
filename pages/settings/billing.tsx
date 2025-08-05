@@ -75,8 +75,8 @@ export default function Billing() {
 
         <p className="text-md">
           {t("help_contact_intro")}{" "}
-          <a className="font-semibold" href="mailto:support@linkwarden.app">
-            support@linkwarden.app
+          <a className="font-semibold" href="mailto:support@linkalbum.top">
+            support@linkalbum.top
           </a>
         </p>
       </div>

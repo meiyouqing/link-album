@@ -256,13 +256,13 @@ export default function Register({
                     i18nKey="sign_up_agreement"
                     components={[
                       <Link
-                        href="https://linkwarden.app/tos"
+                        href="https://linkalbum.top/tos"
                         className="font-semibold"
                         data-testid="terms-of-service-link"
                         key={0}
                       />,
                       <Link
-                        href="https://linkwarden.app/privacy-policy"
+                        href="https://linkalbum.top/privacy-policy"
                         className="font-semibold"
                         data-testid="privacy-policy-link"
                         key={1}
@@ -303,7 +303,7 @@ export default function Register({
                 <div className="text-neutral text-center flex items-baseline gap-1 justify-center">
                   <p>{t("need_help")}</p>
                   <Link
-                    href="mailto:support@linkwarden.app"
+                    href="mailto:support@linkalbum.top"
                     className="font-bold text-base-content"
                     data-testid="support-link"
                   >

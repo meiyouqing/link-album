@@ -40,7 +40,7 @@ export default async function links(req: NextApiRequest, res: NextApiResponse) {
     if (process.env.NEXT_PUBLIC_DEMO === "true")
       return res.status(400).json({
         response:
-          "This action is disabled because this is a read-only demo of Linkwarden.",
+          "This action is disabled because this is a read-only demo of Link Album.",
       });
 
     const newlink = await postLink(req.body, user.id);
@@ -51,7 +51,7 @@ export default async function links(req: NextApiRequest, res: NextApiResponse) {
     if (process.env.NEXT_PUBLIC_DEMO === "true")
       return res.status(400).json({
         response:
-          "This action is disabled because this is a read-only demo of Linkwarden.",
+          "This action is disabled because this is a read-only demo of Link Album.",
       });
 
     const updated = await updateLinks(
@@ -68,7 +68,7 @@ export default async function links(req: NextApiRequest, res: NextApiResponse) {
     if (process.env.NEXT_PUBLIC_DEMO === "true")
       return res.status(400).json({
         response:
-          "This action is disabled because this is a read-only demo of Linkwarden.",
+          "This action is disabled because this is a read-only demo of Link Album.",
       });
 
     const deleted = await deleteLinksById(user.id, req.body.linkIds);

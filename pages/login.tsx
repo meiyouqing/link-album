@@ -119,11 +119,11 @@ export default function Login({
                   <div className="text-xs">
                     {t("demo_desc_2")}{" "}
                     <a
-                      href="https://cloud.linkwarden.app"
+                      href="https://cloud.linkalbum.top"
                       target="_blank"
                       className="font-bold"
                     >
-                      cloud.linkwarden.app
+                      cloud.linkalbum.top
                     </a>
                   </div>
                   <div

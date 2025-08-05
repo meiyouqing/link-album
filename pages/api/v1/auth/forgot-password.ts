@@ -11,7 +11,7 @@ export default async function forgotPassword(
     if (process.env.NEXT_PUBLIC_DEMO === "true")
       return res.status(400).json({
         response:
-          "This action is disabled because this is a read-only demo of Linkwarden.",
+          "This action is disabled because this is a read-only demo of Link Album.",
       });
 
     const dataValidation = ForgotPasswordSchema.safeParse(req.body);
@@ -54,7 +54,7 @@ export default async function forgotPassword(
       });
     }
 
-    sendPasswordResetRequest(user.email, user.name || "Linkwarden User");
+    sendPasswordResetRequest(user.email, user.name || "Link Album User");
 
     return res.status(200).json({
       response: "Password reset email sent.",

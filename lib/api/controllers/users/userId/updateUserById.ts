@@ -132,7 +132,7 @@ export default async function updateUserById(
     sendChangeEmailVerificationRequest(
       user.email,
       data.email,
-      data.name?.trim() || user.name || "Linkwarden User"
+      data.name?.trim() || user.name || "Link Album User"
     );
   }
 

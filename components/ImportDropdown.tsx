@@ -24,7 +24,7 @@ const ImportDropdown = ({}: Props) => {
           <label
             tabIndex={0}
             role="button"
-            htmlFor="import-linkwarden-file"
+            htmlFor="import-Linkalbum-file"
             title={t("from_linkwarden")}
             className="whitespace-nowrap"
           >
@@ -32,10 +32,10 @@ const ImportDropdown = ({}: Props) => {
             <input
               type="file"
               name="photo"
-              id="import-linkwarden-file"
+              id="import-Linkalbum-file"
               accept=".json"
               className="hidden"
-              onChange={(e) => importBookmarks(e, MigrationFormat.linkwarden)}
+              onChange={(e) => importBookmarks(e, MigrationFormat.Linkalbum)}
             />
           </label>
         </li>

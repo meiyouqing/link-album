@@ -52,7 +52,7 @@ export default async function verifyUser({
     if (!subscribedUser) {
       res.status(401).json({
         response:
-          "You are not a subscriber, feel free to reach out to us at support@linkwarden.app if you think this is an issue.",
+          "You are not a subscriber, feel free to reach out to us at support@linkalbum.top if you think this is an issue.",
       });
       return null;
     }

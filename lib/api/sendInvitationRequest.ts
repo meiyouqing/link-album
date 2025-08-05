@@ -31,10 +31,10 @@ export default async function sendInvitationRequest({
   const result = await transporter.sendMail({
     to: identifier,
     from: {
-      name: "Linkwarden",
+      name: "Link Album",
       address: from as string,
     },
-    subject: `You have been invited to join Linkwarden`,
+    subject: `You have been invited to join Link Album`,
     text: text({ url, host }),
     html: emailTemplate({
       parentSubscriptionEmail,

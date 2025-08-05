@@ -49,7 +49,7 @@ export default function Dashboard() {
       account &&
       account.id &&
       account.referredBy === null &&
-      // if user is using Linkwarden for more than 3 days
+      // if user is using Link Album for more than 3 days
       new Date().getTime() - new Date(account.createdAt).getTime() >
         3 * 24 * 60 * 60 * 1000
     ) {

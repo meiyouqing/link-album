@@ -32,7 +32,7 @@ const InstallApp = (props: Props) => {
               <a
                 className="underline"
                 target="_blank"
-                href="https://docs.linkwarden.app/getting-started/pwa-installation"
+                href="https://docs.linkalbum.top/getting-started/pwa-installation"
                 key={0}
               />,
             ]}

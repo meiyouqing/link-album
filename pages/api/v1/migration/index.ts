@@ -34,7 +34,7 @@ export default async function users(req: NextApiRequest, res: NextApiResponse) {
     if (process.env.NEXT_PUBLIC_DEMO === "true")
       return res.status(400).json({
         response:
-          "This action is disabled because this is a read-only demo of Linkwarden.",
+          "This action is disabled because this is a read-only demo of Link Album.",
       });
 
     const request: MigrationRequest = JSON.parse(req.body);
@@ -42,7 +42,7 @@ export default async function users(req: NextApiRequest, res: NextApiResponse) {
     let data;
     if (request.format === MigrationFormat.htmlFile)
       data = await importFromHTMLFile(user.id, request.data);
-    else if (request.format === MigrationFormat.linkwarden)
+    else if (request.format === MigrationFormat.Linkalbum)
       data = await importFromLinkwarden(user.id, request.data);
     else if (request.format === MigrationFormat.wallabag)
       data = await importFromWallabag(user.id, request.data);

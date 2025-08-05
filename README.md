@@ -1,6 +1,6 @@
 <div align="center">
   <img src="./assets/logo.png" width="100px" />
-  <h1>Linkwarden</h1>
+  <h1>Link Album</h1>
   <h3>Bookmark Preservation for Individuals and Teams</h3>
 
 <a href="https://discord.com/invite/CtuYV47nuJ"><img src="https://img.shields.io/discord/1117993124669702164?logo=discord&style=flat" alt="Discord"></a>
@@ -21,14 +21,14 @@
 
 ## Intro & motivation
 
-**Linkwarden is a self-hosted, open-source collaborative bookmark manager to collect, organize and archive webpages.**
+**Link Album is a self-hosted, open-source collaborative bookmark manager to collect, organize and archive webpages.**
 
-The objective is to organize useful webpages and articles you find across the web in one place, and since useful webpages can go away (see the inevitability of [Link Rot](https://www.howtogeek.com/786227/what-is-link-rot-and-how-does-it-threaten-the-web/)), Linkwarden also saves a copy of each webpage as a Screenshot and PDF, ensuring accessibility even if the original content is no longer available.
+The objective is to organize useful webpages and articles you find across the web in one place, and since useful webpages can go away (see the inevitability of [Link Rot](https://www.howtogeek.com/786227/what-is-link-rot-and-how-does-it-threaten-the-web/)), Link Album also saves a copy of each webpage as a Screenshot and PDF, ensuring accessibility even if the original content is no longer available.
 
-Additionally, Linkwarden is designed with collaboration in mind, sharing links with the public and/or allowing multiple users to work together seamlessly.
+Additionally, Link Album is designed with collaboration in mind, sharing links with the public and/or allowing multiple users to work together seamlessly.
 
 > [!TIP]  
-> Our official [Cloud](https://linkwarden.app/#pricing) offering provides the simplest way to begin using Linkwarden and it's the preferred choice for many due to its time-saving benefits. <br> Your subscription supports our hosting infrastructure and ongoing development. <br> Alternatively, if you prefer self-hosting Linkwarden, you can do so by following our [Installation documentation](https://docs.linkwarden.app/self-hosting/installation).
+> Our official [Cloud](https://linkwarden.app/#pricing) offering provides the simplest way to begin using Link Album and it's the preferred choice for many due to its time-saving benefits. <br> Your subscription supports our hosting infrastructure and ongoing development. <br> Alternatively, if you prefer self-hosting Link Album, you can do so by following our [Installation documentation](https://docs.linkwarden.app/self-hosting/installation).
 
 <img src="./assets/dashboard.png" />
 
@@ -68,7 +68,7 @@ Additionally, Linkwarden is designed with collaboration in mind, sharing links w
 - ⬇️ Import and export your bookmarks.
 - 🔐 SSO integration. (Enterprise and Self-hosted users only)
 - 📦 Installable Progressive Web App (PWA).
-- 🍎 iOS Shortcut to save Links to Linkwarden.
+- 🍎 iOS Shortcut to save Links to Link Album.
 - 🔑 API keys.
 - ✅ Bulk actions.
 - 👥 User administration.
@@ -102,12 +102,12 @@ Make sure to check out our [public roadmap](https://github.com/orgs/linkwarden/p
 
 ## Community Projects
 
-Here are some community-maintained projects that are built around Linkwarden:
+Here are some community-maintained projects that are built around Link Album:
 
 - [My Links](https://apps.apple.com/ca/app/my-links-for-linkwarden/id6504573402) - iOS and MacOS Apps, maintained by [JGeek00](https://github.com/JGeek00).
-- [LinkDroid](https://fossdroid.com/a/linkdroid-for-linkwarden.html) - Android App with share sheet integration, [source code](https://github.com/Dacid99/LinkDroid-for-Linkwarden).
-- [LinkGuardian](https://github.com/Elbullazul/LinkGuardian) - An Android client for Linkwarden. Built with Kotlin and Jetpack compose.
-- [StarWarden](https://github.com/rtuszik/starwarden) - A browser extension to save your starred GitHub repositories to Linkwarden.
+- [LinkDroid](https://fossdroid.com/a/linkdroid-for-linkwarden.html) - Android App with share sheet integration, [source code](https://github.com/Dacid99/LinkDroid-for-Link Album).
+- [LinkGuardian](https://github.com/Elbullazul/LinkGuardian) - An Android client for Link Album. Built with Kotlin and Jetpack compose.
+- [StarWarden](https://github.com/rtuszik/starwarden) - A browser extension to save your starred GitHub repositories to Link Album.
 
 ## Development
 
@@ -125,12 +125,12 @@ Here are the other ways to support/cheer this project:
 
 - Starring this repository.
 - Joining us on [Discord](https://discord.com/invite/CtuYV47nuJ).
-- Referring Linkwarden to a friend.
+- Referring Link Album to a friend.
 
 If you did any of the above, Thanksss! Otherwise thanks.
 
 ## Thanks to All the Contributors 💪
 
-Huge thanks to these guys for spending their time helping Linkwarden grow. They rock! ⚡️
+Huge thanks to these guys for spending their time helping Link Album grow. They rock! ⚡️
 
 <img src="https://contributors-img.web.app/image?repo=linkwarden/linkwarden" alt="Contributors"/>

@@ -56,7 +56,7 @@ export default async function users(req: NextApiRequest, res: NextApiResponse) {
       if (!subscribedUser) {
         return res.status(401).json({
           response:
-            "You are not a subscriber, feel free to reach out to us at support@linkwarden.app if you think this is an issue.",
+            "You are not a subscriber, feel free to reach out to us at support@linkalbum.top if you think this is an issue.",
         });
       }
     } else {
@@ -71,7 +71,7 @@ export default async function users(req: NextApiRequest, res: NextApiResponse) {
     if (process.env.NEXT_PUBLIC_DEMO === "true")
       return res.status(400).json({
         response:
-          "This action is disabled because this is a read-only demo of Linkwarden.",
+          "This action is disabled because this is a read-only demo of Link Album.",
       });
 
     const updated = await updateUserById(userId, req.body);
@@ -80,7 +80,7 @@ export default async function users(req: NextApiRequest, res: NextApiResponse) {
     if (process.env.NEXT_PUBLIC_DEMO === "true")
       return res.status(400).json({
         response:
-          "This action is disabled because this is a read-only demo of Linkwarden.",
+          "This action is disabled because this is a read-only demo of Link Album.",
       });
 
     const updated = await deleteUserById(

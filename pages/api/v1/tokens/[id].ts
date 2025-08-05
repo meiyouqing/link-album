@@ -10,7 +10,7 @@ export default async function token(req: NextApiRequest, res: NextApiResponse) {
     if (process.env.NEXT_PUBLIC_DEMO === "true")
       return res.status(400).json({
         response:
-          "This action is disabled because this is a read-only demo of Linkwarden.",
+          "This action is disabled because this is a read-only demo of Link Album.",
       });
 
     const deleted = await deleteToken(user.id, Number(req.query.id) as number);

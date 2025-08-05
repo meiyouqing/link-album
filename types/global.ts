@@ -117,7 +117,7 @@ export type MigrationRequest = {
 };
 
 export enum MigrationFormat {
-  linkwarden,
+  Linkalbum,
   htmlFile,
   wallabag,
   omnivore,

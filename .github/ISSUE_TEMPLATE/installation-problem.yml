@@ -8,6 +8,6 @@ body:
     validations:
       required: true
     attributes:
-      label: For installation issues, please visit discord.linkwarden.app
+      label: For installation issues, please visit discord.linkalbum.top
       description: "Invite link: https://discord.com/invite/CtuYV47nuJ"
       placeholder: Please do not submit installation issues on GitHub.

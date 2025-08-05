@@ -6,7 +6,7 @@ import { useUser } from "@/hooks/store/user";
 
 export default function SettingsSidebar({ className }: { className?: string }) {
   const { t } = useTranslation();
-  const LINKWARDEN_VERSION = process.env.version;
+  const Linkalbum_version = process.env.version;
 
   const { data: user } = useUser();
 
@@ -107,13 +107,13 @@ export default function SettingsSidebar({ className }: { className?: string }) {
 
       <div className="flex flex-col gap-1">
         <Link
-          href={`https://github.com/linkwarden/linkwarden/releases`}
+          href={`https://github.com/Linkalbum/Linkalbum/releases`}
           target="_blank"
           className="text-neutral text-sm ml-2 hover:opacity-50 duration-100"
         >
-          {t("linkwarden_version", { version: LINKWARDEN_VERSION })}
+          {t("Linkalbum_version", { version: Linkalbum_version })}
         </Link>
-        <Link href="https://docs.linkwarden.app" target="_blank">
+        <Link href="https://docs.linkalbum.top" target="_blank">
           <div
             className={`hover:bg-neutral/20 duration-100 py-2 px-2 cursor-pointer flex items-center gap-2 w-full rounded-md h-8`}
           >
@@ -121,7 +121,7 @@ export default function SettingsSidebar({ className }: { className?: string }) {
             <p className="truncate w-full pr-7">{t("help")}</p>
           </div>
         </Link>
-        <Link href="https://github.com/linkwarden/linkwarden" target="_blank">
+        <Link href="https://github.com/Linkalbum/Linkalbum" target="_blank">
           <div
             className={`hover:bg-neutral/20 duration-100 py-2 px-2 cursor-pointer flex items-center gap-2 w-full rounded-md h-8`}
           >
@@ -137,7 +137,7 @@ export default function SettingsSidebar({ className }: { className?: string }) {
             <p className="truncate w-full pr-7">{t("twitter")}</p>
           </div>
         </Link>
-        <Link href="https://fosstodon.org/@linkwarden" target="_blank">
+        <Link href="https://fosstodon.org/@Linkalbum" target="_blank">
           <div
             className={`hover:bg-neutral/20 duration-100 py-2 px-2 cursor-pointer flex items-center gap-2 w-full rounded-md h-8`}
           >

@@ -62,7 +62,7 @@ export default function Subscribe() {
               components={[
                 <a
                   className="font-semibold"
-                  href="mailto:support@linkwarden.app"
+                  href="mailto:support@linkalbum.top"
                   key={0}
                 />,
               ]}

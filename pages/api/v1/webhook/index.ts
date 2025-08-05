@@ -31,7 +31,7 @@ export default async function webhook(
   if (process.env.NEXT_PUBLIC_DEMO === "true")
     return res.status(400).json({
       response:
-        "This action is disabled because this is a read-only demo of Linkwarden.",
+        "This action is disabled because this is a read-only demo of Link Album.",
     });
 
   // see if stripe is already initialized
