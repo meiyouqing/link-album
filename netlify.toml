@@ -4,3 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  NEXT_FORCE_EDGE_IMAGES = "false"
+
+[functions]
+  node_bundler = "nft"
