@@ -5,7 +5,7 @@ This is a summary of the architecture of Link Album. It's intended as a primer f
 When you start Link Album, there are mainly two components that run:
 
 - The NextJS app, This is the main app and it's responsible for serving the frontend and handling the API routes.
-- [The Background Worker](https://github.com/Linkalbum/Linkalbum/blob/main/scripts/worker.ts), This is a separate `ts-node` process that runs in the background and is responsible for archiving links.
+- [The Background Worker](https://github.com/meiyouqing/link-album/blob/main/scripts/worker.ts), This is a separate `ts-node` process that runs in the background and is responsible for archiving links.
 
 ## Main Tech Stack
 
@@ -42,4 +42,4 @@ Linkalbum
 
 ## Versioning
 
-We use semantic versioning for the project. You can track the changes from the [Releases](https://github.com/Linkalbum/Linkalbum/releases).
+We use semantic versioning for the project. You can track the changes from the [Releases](https://github.com/meiyouqing/link-album/releases).

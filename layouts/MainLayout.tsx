@@ -15,7 +15,7 @@ export default function MainLayout({ children }: Props) {
   );
 
   useEffect(() => {
-    getLatestVersion(setShowAnnouncement);
+    // getLatestVersion(setShowAnnouncement);
   }, []);
 
   useEffect(() => {
