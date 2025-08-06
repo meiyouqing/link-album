@@ -36,7 +36,7 @@ export default function ReadableView({ link }: Props) {
   const { t } = useTranslation();
   const [linkContent, setLinkContent] = useState<LinkContent>();
   const [imageError, setImageError] = useState<boolean>(false);
-  const [colorPalette, setColorPalette] = useState<RGBColor[]>();
+  const [colorPalette, setColorPalette] = useState<RGBColor[] | null>();
 
   const [date, setDate] = useState<Date | string>();
 
