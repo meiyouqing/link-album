@@ -8,3 +8,9 @@
 
 [functions]
   node_bundler = "nft"
+  # Disable edge functions to avoid Deno bundling issues
+  edge_bundler = "none"
+
+# Disable Next.js Runtime Edge Functions features that cause bundling issues  
+[functions."___netlify-odb-handler"]
+  included_files = []
