@@ -10,9 +10,7 @@ import importFromOmnivore from "@/lib/api/controllers/migration/importFromOmnivo
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: process.env.IMPORT_LIMIT
-        ? process.env.IMPORT_LIMIT + "mb"
-        : "10mb",
+      sizeLimit: '50mb', // Set the maximum size of the request body
     },
   },
 };

@@ -56,3 +56,5 @@ certificates
 /playwright/.cache/
 
 /assets
+# Local Netlify folder
+.netlify
