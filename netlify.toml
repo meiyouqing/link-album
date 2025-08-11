@@ -23,8 +23,6 @@
   BROWSER_TIMEOUT = "30000"
   IGNORE_UNAUTHORIZED_CA = "false"
   ENABLE_MONOLITH = "false"
-  SPACES_KEY = "***REMOVED***"
-  SPACES_SECRET = "***REMOVED***"
   SPACES_ENDPOINT = "http://toolhub-1767803014225877.oss-cn-beijing.oss-accesspoint.aliyuncs.com"
   SPACES_BUCKET_NAME = "linkwarden"
   SPACES_REGION = "cn-beijing"
