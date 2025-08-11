@@ -8,8 +8,6 @@
 
   NEXTAUTH_SECRET = "MMM"
   NEXTAUTH_URL = "https://linkalbum.netlify.app/api/v1/auth"
-  DATABASE_URL = "postgresql://may:410410@127.0.0.1:5432/linkwarden"
-  POSTGRES_PASSWORD = "410410"
   PORT = "3000"
   STORAGE_FOLDER = "archives"
   AUTOSCROLL_TIMEOUT = "1000"
