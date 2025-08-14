@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/api/db";
 import { LinkRequestQuery, Order, Sort } from "@/types/global";
+import { isPostgresEnabled } from "@/lib/shared/envUtils";
 
 export default async function getLink(
   query: Omit<LinkRequestQuery, "tagId" | "pinnedOnly">
 ) {
-  const POSTGRES_IS_ENABLED =
-    process.env.DATABASE_URL?.startsWith("postgresql");
+  const POSTGRES_IS_ENABLED = isPostgresEnabled();
 
   let order: Order = { id: "desc" };
   if (query.sort === Sort.DateNewestFirst) order = { id: "desc" };
