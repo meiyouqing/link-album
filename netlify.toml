@@ -9,6 +9,9 @@
   NEXTAUTH_SECRET = "MMM"
   NEXTAUTH_URL = "https://linkalbum.netlify.app/api/v1/auth"
   PORT = "3000"
+  DATABASE_URL = "postgresql://neondb_owner:npg_G9fZmzCIN2vp@ep-twilight-sound-aeobgvlq-pooler.c-2.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require"
+  
+
   STORAGE_FOLDER = "archives"
   AUTOSCROLL_TIMEOUT = "1000"
   NEXT_PUBLIC_DISABLE_REGISTRATION = "false"
