@@ -2,6 +2,7 @@ import { icons } from "@/lib/client/icons";
 import Fuse from "fuse.js";
 import { forwardRef, useMemo } from "react";
 import { FixedSizeGrid as Grid } from "react-window";
+import Icon from "./Icon";
 
 const fuse = new Fuse(icons, {
   keys: [{ name: "name", weight: 4 }, "tags", "categories"],
@@ -34,7 +35,6 @@ const IconGrid = ({ query, color, weight, iconName, setIconName }: Props) => {
     if (index >= filteredIcons.length) return null; // Prevent overflow
 
     const icon = filteredIcons[index];
-    const IconComponent = icon.Icon;
 
     return (
       <div
@@ -52,7 +52,7 @@ const IconGrid = ({ query, color, weight, iconName, setIconName }: Props) => {
             : ""
         }`}
       >
-        <IconComponent size={32} weight={weight} color={color} />
+        <Icon icon={icon.pascal_name} size={32} weight={weight} color={color} />
       </div>
     );
   };
