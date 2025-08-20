@@ -86,6 +86,7 @@ export default async function readFile(filePath: string) {
       return {
         file: "An internal occurred, please contact the support team.",
         contentType,
+        status: 500,
       };
     }
   } else {

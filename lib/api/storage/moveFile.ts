@@ -2,8 +2,16 @@ import fs from "fs";
 import path from "path";
 import s3Client from "./s3Client";
 import removeFile from "./removeFile";
+import { netlifyBlobsClient, shouldUseNetlifyBlobs } from "./netlifyBlobsClient";
 
 export default async function moveFile(from: string, to: string) {
+  // Use Netlify Blobs if configured
+  if (shouldUseNetlifyBlobs()) {
+    await netlifyBlobsClient.moveFile(from, to);
+    return;
+  }
+
+  // Original implementation for S3 or filesystem
   if (s3Client) {
     const Bucket = process.env.SPACES_BUCKET_NAME;
 

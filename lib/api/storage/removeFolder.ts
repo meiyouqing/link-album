@@ -6,6 +6,7 @@ import {
   DeleteObjectsCommandInput,
   ListObjectsCommand,
 } from "@aws-sdk/client-s3";
+import { netlifyBlobsClient, shouldUseNetlifyBlobs } from "./netlifyBlobsClient";
 
 async function emptyS3Directory(bucket: string, dir: string) {
   if (s3Client) {
@@ -38,6 +39,13 @@ async function emptyS3Directory(bucket: string, dir: string) {
 }
 
 export default async function removeFolder({ filePath }: { filePath: string }) {
+  // Use Netlify Blobs if configured
+  if (shouldUseNetlifyBlobs()) {
+    await netlifyBlobsClient.removeFolder({ filePath });
+    return;
+  }
+
+  // Original implementation for S3 or filesystem
   if (s3Client) {
     try {
       await emptyS3Directory(
