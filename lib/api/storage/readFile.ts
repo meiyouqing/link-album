@@ -7,6 +7,7 @@ import fs from "fs";
 import path from "path";
 import s3Client from "./s3Client";
 import util from "util";
+import { netlifyBlobsClient, shouldUseNetlifyBlobs } from "./netlifyBlobsClient";
 
 type ReturnContentTypes =
   | "text/plain"
@@ -17,6 +18,12 @@ type ReturnContentTypes =
   | "application/json";
 
 export default async function readFile(filePath: string) {
+  // Use Netlify Blobs if configured
+  if (shouldUseNetlifyBlobs()) {
+    return await netlifyBlobsClient.readFile(filePath);
+  }
+
+  // Original implementation for S3 or filesystem
   let contentType: ReturnContentTypes;
 
   if (s3Client) {

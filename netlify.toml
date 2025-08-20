@@ -12,6 +12,7 @@
   DATABASE_URL = "postgresql://neondb_owner:npg_G9fZmzCIN2vp@ep-twilight-sound-aeobgvlq-pooler.c-2.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require"
   NETLIFY_DATABASE_URL = "postgresql://neondb_owner:npg_G9fZmzCIN2vp@ep-twilight-sound-aeobgvlq-pooler.c-2.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require"
 
+  NETLIFY_SITE_ID = "d06490d5-32fd-4c46-a6d4-75645e45abbb"
 
   STORAGE_FOLDER = "archives"
   AUTOSCROLL_TIMEOUT = "1000"

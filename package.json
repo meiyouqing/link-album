@@ -34,6 +34,8 @@
     "@aws-sdk/client-s3": "^3.379.1",
     "@headlessui/react": "^1.7.15",
     "@mozilla/readability": "^0.4.4",
+    "@netlify/blobs": "^10.0.8",
+    "@netlify/functions": "^4.2.2",
     "@netlify/neon": "^0.1.0",
     "@phosphor-icons/core": "^2.1.1",
     "@phosphor-icons/react": "^2.1.7",
