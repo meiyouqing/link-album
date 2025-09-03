@@ -23,6 +23,7 @@ const nextConfig = {
     ],
 
     minimumCacheTTL: 10,
+    unoptimized: true,
   },
   env: {
     version,

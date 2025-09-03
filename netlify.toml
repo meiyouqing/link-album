@@ -32,3 +32,9 @@
   SPACES_BUCKET_NAME = "linkwarden"
   SPACES_REGION = "cn-beijing"
   SPACES_FORCE_PATH_STYLE = "true"
+
+# Add this section to ensure Next.js runtime is used
+[dev]
+framework = "next"
+command = "npm run dev"
+targetPort = 3000

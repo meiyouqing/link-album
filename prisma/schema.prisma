@@ -31,61 +31,46 @@ model User {
   username                String?               @unique
   email                   String?               @unique
   emailVerified           DateTime?
-  unverifiedNewEmail      String?
-  image                   String?
   password                String?
-  locale                  String                @default("en")
-  parentSubscription      Subscription?         @relation("ChildUsers", fields: [parentSubscriptionId], references: [id])
-  parentSubscriptionId    Int?
-  accounts                Account[]
-  collections             Collection[]
-  tags                    Tag[]
-  pinnedLinks             Link[]                @relation("PinnedLinks")
-  createdLinks            Link[]                @relation("CreatedLinks")
-  createdCollections      Collection[]          @relation("CreatedCollections")
-  collectionsJoined       UsersAndCollections[]
-  collectionOrder         Int[]                 @default([])
-  whitelistedUsers        WhitelistedUser[]
-  accessTokens            AccessToken[]
-  subscriptions           Subscription?
-  linksRouteTo            LinksRouteTo          @default(ORIGINAL)
-  aiTaggingMethod         AiTaggingMethod       @default(DISABLED)
-  aiPredefinedTags        String[]              @default([])
-  dashboardRecentLinks    Boolean               @default(true)
-  dashboardPinnedLinks    Boolean               @default(true)
-  preventDuplicateLinks   Boolean               @default(false)
-  archiveAsScreenshot     Boolean               @default(true)
-  archiveAsMonolith       Boolean               @default(true)
-  archiveAsPDF            Boolean               @default(true)
-  archiveAsWaybackMachine Boolean               @default(false)
   isPrivate               Boolean               @default(false)
-  referredBy              String?
   createdAt               DateTime              @default(now())
+  archiveAsPDF            Boolean               @default(true)
+  archiveAsScreenshot     Boolean               @default(true)
+  archiveAsWaybackMachine Boolean               @default(false)
+  image                   String?
   updatedAt               DateTime              @default(now()) @updatedAt
-}
-
-enum AiTaggingMethod {
-  DISABLED
-  GENERATE
-  PREDEFINED
-}
-
-enum LinksRouteTo {
-  ORIGINAL
-  PDF
-  READABLE
-  MONOLITH
-  SCREENSHOT
-  DETAILS
+  linksRouteTo            LinksRouteTo          @default(ORIGINAL)
+  collectionOrder         Int[]                 @default([])
+  preventDuplicateLinks   Boolean               @default(false)
+  unverifiedNewEmail      String?
+  locale                  String                @default("en")
+  archiveAsMonolith       Boolean               @default(true)
+  parentSubscriptionId    Int?
+  referredBy              String?
+  aiPredefinedTags        String[]              @default([])
+  aiTaggingMethod         AiTaggingMethod       @default(DISABLED)
+  dashboardPinnedLinks    Boolean               @default(true)
+  dashboardRecentLinks    Boolean               @default(true)
+  accessTokens            AccessToken[]
+  accounts                Account[]
+  createdCollections      Collection[]          @relation("CreatedCollections")
+  collections             Collection[]
+  createdLinks            Link[]                @relation("CreatedLinks")
+  subscriptions           Subscription?
+  tags                    Tag[]
+  parentSubscription      Subscription?         @relation("ChildUsers", fields: [parentSubscriptionId], references: [id])
+  collectionsJoined       UsersAndCollections[]
+  whitelistedUsers        WhitelistedUser[]
+  pinnedLinks             Link[]                @relation("PinnedLinks")
 }
 
 model WhitelistedUser {
   id        Int      @id @default(autoincrement())
   username  String   @default("")
-  User      User?    @relation(fields: [userId], references: [id])
   userId    Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+  User      User?    @relation(fields: [userId], references: [id])
 }
 
 model VerificationToken {
@@ -110,36 +95,36 @@ model Collection {
   id               Int                   @id @default(autoincrement())
   name             String
   description      String                @default("")
-  icon             String?
-  iconWeight       String?
   color            String                @default("#0ea5e9")
-  parentId         Int?
-  parent           Collection?           @relation("SubCollections", fields: [parentId], references: [id])
-  subCollections   Collection[]          @relation("SubCollections")
   isPublic         Boolean               @default(false)
-  owner            User                  @relation(fields: [ownerId], references: [id])
   ownerId          Int
-  members          UsersAndCollections[]
-  createdBy        User?                 @relation("CreatedCollections", fields: [createdById], references: [id])
-  createdById      Int?
-  links            Link[]
-  rssSubscriptions RssSubscription[]
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @default(now()) @updatedAt
+  parentId         Int?
+  icon             String?
+  iconWeight       String?
+  createdById      Int?
+  createdBy        User?                 @relation("CreatedCollections", fields: [createdById], references: [id])
+  owner            User                  @relation(fields: [ownerId], references: [id])
+  parent           Collection?           @relation("SubCollections", fields: [parentId], references: [id])
+  subCollections   Collection[]          @relation("SubCollections")
+  links            Link[]
+  rssSubscriptions RssSubscription[]
+  members          UsersAndCollections[]
 
   @@index([ownerId])
 }
 
 model UsersAndCollections {
-  user         User       @relation(fields: [userId], references: [id])
   userId       Int
-  collection   Collection @relation(fields: [collectionId], references: [id])
   collectionId Int
   canCreate    Boolean
   canUpdate    Boolean
   canDelete    Boolean
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @default(now()) @updatedAt
+  collection   Collection @relation(fields: [collectionId], references: [id])
+  user         User       @relation(fields: [userId], references: [id])
 
   @@id([userId, collectionId])
   @@index([userId])
@@ -148,39 +133,39 @@ model UsersAndCollections {
 model Link {
   id            Int        @id @default(autoincrement())
   name          String     @default("")
-  type          String     @default("url")
+  url           String?
   description   String     @default("")
-  pinnedBy      User[]     @relation("PinnedLinks")
-  createdBy     User?      @relation("CreatedLinks", fields: [createdById], references: [id])
-  createdById   Int?
-  collection    Collection @relation(fields: [collectionId], references: [id])
   collectionId  Int
-  tags          Tag[]
+  createdAt     DateTime   @default(now())
+  pdf           String?
+  image         String?
+  updatedAt     DateTime   @default(now()) @updatedAt
+  readable      String?
+  lastPreserved DateTime?
+  textContent   String?
+  type          String     @default("url")
+  preview       String?
+  importDate    DateTime?
+  monolith      String?
+  color         String?
   icon          String?
   iconWeight    String?
-  color         String?
-  url           String?
-  textContent   String?
-  preview       String?
-  image         String?
-  pdf           String?
-  readable      String?
-  monolith      String?
+  createdById   Int?
   aiTagged      Boolean    @default(false)
-  lastPreserved DateTime?
-  importDate    DateTime?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @default(now()) @updatedAt
+  collection    Collection @relation(fields: [collectionId], references: [id])
+  createdBy     User?      @relation("CreatedLinks", fields: [createdById], references: [id])
+  tags          Tag[]      @relation("LinkToTag")
+  pinnedBy      User[]     @relation("PinnedLinks")
 }
 
 model Tag {
   id        Int      @id @default(autoincrement())
   name      String
-  links     Link[]
-  owner     User     @relation(fields: [ownerId], references: [id])
   ownerId   Int
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+  owner     User     @relation(fields: [ownerId], references: [id])
+  links     Link[]   @relation("LinkToTag")
 
   @@unique([name, ownerId])
   @@index([ownerId])
@@ -192,26 +177,26 @@ model Subscription {
   stripeSubscriptionId String   @unique
   currentPeriodStart   DateTime
   currentPeriodEnd     DateTime
-  quantity             Int      @default(1)
-  user                 User     @relation(fields: [userId], references: [id])
   userId               Int      @unique
-  childUsers           User[]   @relation("ChildUsers")
   createdAt            DateTime @default(now())
   updatedAt            DateTime @default(now()) @updatedAt
+  quantity             Int      @default(1)
+  user                 User     @relation(fields: [userId], references: [id])
+  childUsers           User[]   @relation("ChildUsers")
 }
 
 model AccessToken {
   id         Int       @id @default(autoincrement())
   name       String
-  user       User      @relation(fields: [userId], references: [id])
   userId     Int
   token      String    @unique
   revoked    Boolean   @default(false)
-  isSession  Boolean   @default(false)
   expires    DateTime
   lastUsedAt DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @default(now()) @updatedAt
+  isSession  Boolean   @default(false)
+  user       User      @relation(fields: [userId], references: [id])
 }
 
 model RssSubscription {
@@ -219,9 +204,24 @@ model RssSubscription {
   url           String
   name          String
   lastBuildDate DateTime?
-  collection    Collection @relation(fields: [collectionId], references: [id])
   collectionId  Int
   ownerId       Int
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @default(now()) @updatedAt
+  collection    Collection @relation(fields: [collectionId], references: [id])
+}
+
+enum AiTaggingMethod {
+  DISABLED
+  GENERATE
+  PREDEFINED
+}
+
+enum LinksRouteTo {
+  ORIGINAL
+  PDF
+  READABLE
+  MONOLITH
+  SCREENSHOT
+  DETAILS
 }
