@@ -8,6 +8,37 @@ import {
 } from "@/lib/shared/schemaValidation";
 import { hasPassedLimit } from "../../verifyCapacity";
 
+// Function to trigger link processing via Netlify Function
+async function triggerLinkProcessing(linkId: number) {
+  try {
+    // In production on Netlify, use the function URL
+    const baseUrl = process.env.NETLIFY_URL || process.env.URL || '';
+    
+    // If we're running locally or don't have Netlify URLs, skip processing
+    if (!baseUrl.includes('netlify')) {
+      console.log('Skipping link processing - not running on Netlify');
+      return;
+    }
+
+    const response = await fetch(`${baseUrl}/.netlify/functions/process-link`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ linkId }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to trigger link processing:', response.status);
+    } else {
+      console.log('Link processing triggered successfully for link:', linkId);
+    }
+  } catch (error) {
+    console.error('Error triggering link processing:', error);
+    // Don't throw - we don't want to fail link creation if processing fails
+  }
+}
+
 export default async function postLink(
   body: PostLinkSchemaType,
   userId: number
@@ -142,6 +173,13 @@ export default async function postLink(
   });
 
   createFolder({ filePath: `archives/${newLink.collectionId}` });
+
+  // Trigger link processing asynchronously (don't wait for it)
+  if (newLink.url) {
+    triggerLinkProcessing(newLink.id).catch(error => {
+      console.error('Failed to trigger link processing:', error);
+    });
+  }
 
   return { response: newLink, status: 200 };
 }

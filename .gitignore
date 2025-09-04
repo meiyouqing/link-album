@@ -1,5 +1,6 @@
 # dependencies
 /node_modules
+/.netlify/functions/node_modules
 /.pnp
 .pnp.js
 
