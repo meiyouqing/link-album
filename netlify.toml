@@ -4,8 +4,6 @@
 
 [functions]
   directory = "netlify/functions"
-  # Increase timeout for link processing functions
-  timeout = 600  # 10 minutes
 
 [build.environment]
   NODE_VERSION = "22.15.0"
@@ -43,13 +41,14 @@
   DISABLE_PRESERVATION = "false"
   
   # Browser settings for Playwright
-  PLAYWRIGHT_BROWSERS_PATH = "/tmp/playwright-browsers"
+  SCREENSHOTONE_API_KEY = "th7Lw0HWLdwzPw"
 
 # Add this section to ensure Next.js runtime is used
 [dev]
-framework = "next"
-command = "npm run dev"
-targetPort = 3000
+  framework = "next"
+  command = "npm run dev"
+  targetPort = 3000
+  functions = "functions"
 
 # Redirect API calls to Netlify Functions
 [[redirects]]

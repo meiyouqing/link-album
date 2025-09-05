@@ -11,16 +11,24 @@ import { hasPassedLimit } from "../../verifyCapacity";
 // Function to trigger link processing via Netlify Function
 async function triggerLinkProcessing(linkId: number) {
   try {
-    // In production on Netlify, use the function URL
-    const baseUrl = process.env.NETLIFY_URL || process.env.URL || '';
+    let functionUrl = '';
     
-    // If we're running locally or don't have Netlify URLs, skip processing
-    if (!baseUrl.includes('netlify')) {
-      console.log('Skipping link processing - not running on Netlify');
+    // 检测运行环境并设置正确的URL
+    if (process.env.NETLIFY_URL || process.env.URL) {
+      // Netlify生产环境
+      const baseUrl = process.env.NETLIFY_URL || process.env.URL;
+      functionUrl = `${baseUrl}/.netlify/functions/process-link`;
+    } else if (process.env.NODE_ENV === 'development') {
+      // 本地开发环境 - 使用netlify dev的默认端口
+      functionUrl = 'http://localhost:8888/.netlify/functions/process-link';
+    } else {
+      console.log('Unable to determine environment - skipping link processing');
       return;
     }
 
-    const response = await fetch(`${baseUrl}/.netlify/functions/process-link`, {
+    console.log(`Triggering link processing for link ${linkId} at: ${functionUrl}`);
+
+    const response = await fetch(functionUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -29,9 +37,10 @@ async function triggerLinkProcessing(linkId: number) {
     });
 
     if (!response.ok) {
-      console.error('Failed to trigger link processing:', response.status);
+      console.error('Failed to trigger link processing:', response.status, await response.text());
     } else {
-      console.log('Link processing triggered successfully for link:', linkId);
+      const result = await response.json();
+      console.log('Link processing triggered successfully for link:', linkId, result);
     }
   } catch (error) {
     console.error('Error triggering link processing:', error);

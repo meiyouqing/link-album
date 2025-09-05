@@ -1,5 +1,7 @@
 # dependencies
 /node_modules
+/netlify/functions/node_modules
+/netlify/functions/prisma/migrations
 /.netlify/functions/node_modules
 /.pnp
 .pnp.js

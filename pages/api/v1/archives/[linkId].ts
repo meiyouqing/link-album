@@ -13,6 +13,35 @@ import generatePreview from "@/lib/api/generatePreview";
 import createFolder from "@/lib/api/storage/createFolder";
 import { UploadFileSchema } from "@/lib/shared/schemaValidation";
 
+// Helper function to get the correct file path from database
+async function getArchiveFilePath(linkId: number, format: ArchivedFormat) {
+  const link = await prisma.link.findUnique({
+    where: { id: linkId },
+    select: {
+      image: true,
+      pdf: true,
+      readable: true,
+      monolith: true
+    }
+  });
+  
+  if (!link) return null;
+  
+  // Return the blob path based on format
+  switch (format) {
+    case ArchivedFormat.png:
+      return link.image;
+    case ArchivedFormat.pdf:
+      return link.pdf;
+    case ArchivedFormat.readability:
+      return link.readable;
+    case ArchivedFormat.monolith:
+      return link.monolith;
+    default:
+      return null;
+  }
+}
+
 export const config = {
   api: {
     bodyParser: false,
@@ -61,20 +90,78 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
         .json({ response: "You don't have access to this collection." });
 
     if (isPreview) {
+      // For preview, try to get the screenshot (image) from the new storage
+      const imageFilePath = await getArchiveFilePath(linkId, ArchivedFormat.png);
+      
+      if (imageFilePath) {
+        try {
+          // Use our Netlify function to get the image
+          const archiveResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/.netlify/functions/get-archive?linkId=${linkId}&type=screenshot`);
+          
+          if (archiveResponse.ok) {
+            const contentType = archiveResponse.headers.get('content-type') || 'image/png';
+            const arrayBuffer = await archiveResponse.arrayBuffer();
+            
+            res.setHeader("Content-Type", contentType);
+            return res.send(Buffer.from(arrayBuffer));
+          }
+        } catch (error) {
+          console.error('Error fetching preview from Netlify Blobs:', error);
+        }
+      }
+      
+      // Fallback to old preview method
       const { file, contentType, status } = await readFile(
         `archives/preview/${collectionIsAccessible.id}/${linkId}.jpeg`
       );
 
       res.setHeader("Content-Type", contentType).status(status as number);
-
       return res.send(file);
+      
     } else {
+      // Get the archive file path from database based on format
+      const archiveFilePath = await getArchiveFilePath(linkId, format);
+      
+      if (archiveFilePath) {
+        try {
+          // Determine the type for our get-archive function
+          let archiveType: string;
+          switch (format) {
+            case ArchivedFormat.png:
+              archiveType = 'screenshot';
+              break;
+            case ArchivedFormat.pdf:
+              archiveType = 'pdf';
+              break;
+            case ArchivedFormat.readability:
+            case ArchivedFormat.monolith:
+              archiveType = 'html';
+              break;
+            default:
+              archiveType = 'screenshot';
+          }
+          
+          // Use our Netlify function to get the file
+          const archiveResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/.netlify/functions/get-archive?linkId=${linkId}&type=${archiveType}`);
+          
+          if (archiveResponse.ok) {
+            const contentType = archiveResponse.headers.get('content-type') || 'application/octet-stream';
+            const arrayBuffer = await archiveResponse.arrayBuffer();
+            
+            res.setHeader("Content-Type", contentType);
+            return res.send(Buffer.from(arrayBuffer));
+          }
+        } catch (error) {
+          console.error('Error fetching archive from Netlify Blobs:', error);
+        }
+      }
+      
+      // Fallback to old storage method
       const { file, contentType, status } = await readFile(
         `archives/${collectionIsAccessible.id}/${linkId + suffix}`
       );
 
       res.setHeader("Content-Type", contentType).status(status as number);
-
       return res.send(file);
     }
   } else if (req.method === "POST") {
@@ -167,7 +254,7 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
         const fileBuffer = fs.readFileSync(files.file[0].filepath);
 
         if (
-          Buffer.byteLength(fileBuffer) >
+          fileBuffer.length >
           1024 * 1024 * Number(NEXT_PUBLIC_MAX_FILE_BUFFER)
         )
           return res.status(400).json({
@@ -277,7 +364,7 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
         const fileBuffer = fs.readFileSync(files.file[0].filepath);
 
         if (
-          Buffer.byteLength(fileBuffer) >
+          fileBuffer.length >
           1024 * 1024 * Number(NEXT_PUBLIC_MAX_FILE_BUFFER)
         )
           return res.status(400).json({
