@@ -2,9 +2,6 @@
   command = "npx prisma migrate deploy && npm run prisma:generate && npm run build"
   publish = ".next"
 
-[functions]
-  directory = "netlify/functions"
-
 [build.environment]
   NODE_VERSION = "22.15.0"
   NEXT_FORCE_EDGE_IMAGES = "false"
@@ -43,12 +40,15 @@
   # Browser settings for Playwright
   SCREENSHOTONE_API_KEY = "th7Lw0HWLdwzPw"
 
-# Add this section to ensure Next.js runtime is used
+# Functions configuration - use the main /functions directory
+[functions]
+  directory = "/netlify/functions"
+
+# Development configuration
 [dev]
   framework = "next"
   command = "npm run dev"
   targetPort = 3000
-  functions = "functions"
 
 # Redirect API calls to Netlify Functions
 [[redirects]]
