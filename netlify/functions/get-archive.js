@@ -8,7 +8,11 @@ async function initBlobs() {
     const { getStore: importedGetStore } = await import('@netlify/blobs');
     getStore = importedGetStore;
   }
-  return getStore('link-album-files'); // Use same store name as /functions
+  return getStore({
+    name: 'link-album-files',
+    siteID: process.env.NETLIFY_SITE_ID,
+    token: process.env.NETLIFY_BLOBS_TOKEN
+  }); // Use same store name as /functions
 }
 
 const prisma = new PrismaClient();
@@ -65,7 +69,9 @@ exports.handler = async (event, context) => {
             members: {
               select: {
                 userId: true,
-                canEdit: true
+                canUpdate: true,
+                canCreate: true,
+                canDelete: true
               }
             }
           }

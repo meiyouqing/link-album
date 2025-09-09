@@ -2,7 +2,11 @@ import { PrismaClient } from '@prisma/client';
 import { getStore } from '@netlify/blobs';
 
 // Initialize Netlify Blobs store
-const fileStore = getStore('link-album-files'); // Use same store name as /functions
+const fileStore = getStore({
+  name: 'link-album-files',
+  siteID: process.env.NETLIFY_SITE_ID,
+  token: process.env.NETLIFY_BLOBS_TOKEN
+});
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -72,19 +76,122 @@ function createPlaceholderImage(url) {
 // Helper function to generate PDF using external service
 async function generatePdf(url) {
   try {
-    // Using a free PDF generation service
-    const pdfUrl = `https://api.html-css-to-pdf.com/v1/generate?url=${encodeURIComponent(url)}&format=A4`;
+    console.log('Generating PDF for:', url);
     
-    // If no PDF service available, create a simple HTML to PDF placeholder
-    console.log('Creating PDF placeholder for:', url);
+    // Try using htmlcsstoimage.com API for PDF generation
+    const htmlCssToImageUrl = `https://hcti.io/v1/image?url=${encodeURIComponent(url)}&format=pdf&width=1200&height=800`;
+    
+    // If we have a ScreenshotOne API key, use their PDF service
+    if (process.env.SCREENSHOTONE_API_KEY && process.env.SCREENSHOTONE_API_KEY !== 'demo') {
+      const screenshotOneUrl = `https://api.screenshotone.com/take?access_key=${process.env.SCREENSHOTONE_API_KEY}&url=${encodeURIComponent(url)}&format=pdf&block_ads=true&block_cookie_banners=true&response_type=by_format`;
+      
+      console.log('Using ScreenshotOne API for PDF generation...');
+      const response = await fetch(screenshotOneUrl);
+      if (response.ok) {
+        const buffer = await response.arrayBuffer();
+        console.log(`PDF generated successfully: ${buffer.byteLength} bytes`);
+        return new Uint8Array(buffer);
+      } else {
+        console.warn('ScreenshotOne PDF API failed:', response.status, response.statusText);
+      }
+    }
+    
+    // Fallback: Create a properly formatted PDF using simple PDF structure
+    console.log('Creating simple PDF document...');
     const htmlContent = await fetchHtmlContent(url);
-    const pdfPlaceholder = Buffer.from(`PDF placeholder for: ${url}\n\nContent: ${htmlContent.substring(0, 1000)}...`);
-    return new Uint8Array(pdfPlaceholder);
+    const title = htmlContent.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] || url;
+    
+    // Create a minimal but valid PDF structure
+    const pdfContent = createSimplePdf(url, title, htmlContent.substring(0, 2000));
+    return new Uint8Array(pdfContent);
+    
   } catch (error) {
     console.error('Error generating PDF:', error);
-    const pdfPlaceholder = Buffer.from(`PDF generation failed for: ${url}\n\nError: ${error.message}`);
-    return new Uint8Array(pdfPlaceholder);
+    // Create a valid PDF error document
+    const errorPdf = createSimplePdf(url, 'PDF Generation Error', `Error: ${error.message}`);
+    return new Uint8Array(errorPdf);
   }
+}
+
+// Helper function to create a simple but valid PDF document
+function createSimplePdf(url, title, content) {
+  const pdfHeader = `%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+/Resources <<
+/Font <<
+/F1 5 0 R
+>>
+>>
+>>
+endobj
+
+4 0 obj
+<<
+/Length ${200 + content.length + url.length + title.length}
+>>
+stream
+BT
+/F1 16 Tf
+50 750 Td
+(${title.replace(/[()\\]/g, '\\$&')}) Tj
+0 -30 Td
+/F1 12 Tf
+(URL: ${url.replace(/[()\\]/g, '\\$&')}) Tj
+0 -30 Td
+(Content Preview:) Tj
+0 -20 Td
+/F1 10 Tf
+(${content.replace(/[()\\]/g, '\\$&').replace(/\n/g, ' ')}) Tj
+ET
+endstream
+endobj
+
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+
+xref
+0 6
+0000000000 65535 f 
+0000000010 00000 n 
+0000000053 00000 n 
+0000000106 00000 n 
+0000000260 00000 n 
+0000000${(400 + content.length + url.length + title.length).toString().padStart(3, '0')} 00000 n 
+trailer
+<<
+/Size 6
+/Root 1 0 R
+>>
+startxref
+${450 + content.length + url.length + title.length}
+%%EOF`;
+
+  return Buffer.from(pdfHeader);
 }
 
 // Archive processing function using external services instead of Playwright

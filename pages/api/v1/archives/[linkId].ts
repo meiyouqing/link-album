@@ -66,8 +66,12 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
     return res.status(401).json({ response: "Invalid parameters." });
 
   if (req.method === "GET") {
+    console.log(`[Archive API] GET request - linkId: ${linkId}, format: ${format}, isPreview: ${isPreview}`);
+    
     const token = await verifyToken({ req });
     const userId = typeof token === "string" ? undefined : token?.id;
+
+    console.log(`[Archive API] User ID: ${userId}`);
 
     const collectionIsAccessible = await prisma.collection.findFirst({
       where: {
@@ -84,6 +88,8 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
       },
     });
 
+    console.log(`[Archive API] Collection accessible: ${!!collectionIsAccessible}`);
+
     if (!collectionIsAccessible)
       return res
         .status(401)
@@ -96,7 +102,11 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
       if (imageFilePath) {
         try {
           // Use our Netlify function to get the image
-          const archiveResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/.netlify/functions/get-archive?linkId=${linkId}&type=screenshot`);
+          // In development, use localhost:8888 for Netlify functions
+          const baseUrl = process.env.NODE_ENV === 'development' 
+            ? 'http://localhost:8888' 
+            : (process.env.NEXTAUTH_URL || 'http://localhost:3000').replace('/api/v1/auth', '');
+          const archiveResponse = await fetch(`${baseUrl}/.netlify/functions/get-archive?linkId=${linkId}&type=screenshot`);
           
           if (archiveResponse.ok) {
             const contentType = archiveResponse.headers.get('content-type') || 'image/png';
@@ -122,6 +132,8 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
       // Get the archive file path from database based on format
       const archiveFilePath = await getArchiveFilePath(linkId, format);
       
+      console.log(`[Archive API] Archive file path from DB: ${archiveFilePath}`);
+      
       if (archiveFilePath) {
         try {
           // Determine the type for our get-archive function
@@ -142,17 +154,27 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
           }
           
           // Use our Netlify function to get the file
-          const archiveResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/.netlify/functions/get-archive?linkId=${linkId}&type=${archiveType}`);
+          // In development, use localhost:8888 for Netlify functions
+          const baseUrl = process.env.NODE_ENV === 'development' 
+            ? 'http://localhost:8888' 
+            : (process.env.NEXTAUTH_URL || 'http://localhost:3000').replace('/api/v1/auth', '');
+          const archiveUrl = `${baseUrl}/.netlify/functions/get-archive?linkId=${linkId}&type=${archiveType}`;
+          
+          console.log(`[Archive API] Fetching from: ${archiveUrl}`);
+          const archiveResponse = await fetch(archiveUrl);
           
           if (archiveResponse.ok) {
             const contentType = archiveResponse.headers.get('content-type') || 'application/octet-stream';
             const arrayBuffer = await archiveResponse.arrayBuffer();
             
+            console.log(`[Archive API] Successfully fetched archive. Content-Type: ${contentType}, Size: ${arrayBuffer.byteLength} bytes`);
             res.setHeader("Content-Type", contentType);
             return res.send(Buffer.from(arrayBuffer));
+          } else {
+            console.error(`[Archive API] Failed to fetch from Netlify function. Status: ${archiveResponse.status}, StatusText: ${archiveResponse.statusText}`);
           }
         } catch (error) {
-          console.error('Error fetching archive from Netlify Blobs:', error);
+          console.error(`[Archive API] Error fetching archive from Netlify Blobs:`, error);
         }
       }
       

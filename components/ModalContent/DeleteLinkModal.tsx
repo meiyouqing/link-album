@@ -16,6 +16,7 @@ export default function DeleteLinkModal({ onClose, activeLink }: Props) {
   const { t } = useTranslation();
   const [link, setLink] =
     useState<LinkIncludingShortenedCollectionAndTags>(activeLink);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const deleteLink = useDeleteLink();
   const router = useRouter();
@@ -25,11 +26,15 @@ export default function DeleteLinkModal({ onClose, activeLink }: Props) {
   }, []);
 
   const submit = async () => {
+    if (isDeleting) return; // Prevent double-deletion
+    
+    setIsDeleting(true);
     const load = toast.loading(t("deleting"));
 
     await deleteLink.mutateAsync(link.id as number, {
       onSettled: (data, error) => {
         toast.dismiss(load);
+        setIsDeleting(false);
 
         if (error) {
           toast.error(error.message);
@@ -62,9 +67,14 @@ export default function DeleteLinkModal({ onClose, activeLink }: Props) {
 
         <p>{t("shift_key_tip")}</p>
 
-        <Button className="ml-auto" intent="destructive" onClick={submit}>
-          <i className="bi-trash text-xl" />
-          {t("delete")}
+        <Button 
+          className="ml-auto" 
+          intent="destructive" 
+          onClick={submit}
+          disabled={isDeleting}
+        >
+          <i className={`text-xl ${isDeleting ? 'bi-hourglass-split animate-spin' : 'bi-trash'}`} />
+          {isDeleting ? t("deleting") : t("delete")}
         </Button>
       </div>
     </Modal>

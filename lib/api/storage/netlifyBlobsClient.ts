@@ -1,4 +1,13 @@
-import { getStore } from "@netlify/blobs";
+// Use dynamic import for @netlify/blobs since it's an ES module
+let getStore: any;
+
+async function initNetlifyBlobs() {
+  if (!getStore) {
+    const { getStore: importedGetStore } = await import("@netlify/blobs");
+    getStore = importedGetStore;
+  }
+  return getStore;
+}
 
 // Storage configuration
 const USE_NETLIFY_BLOBS = process.env.USE_NETLIFY_BLOBS === "true";
@@ -31,8 +40,13 @@ interface NetlifyBlobsClient {
 }
 
 class NetlifyBlobsStorageClient implements NetlifyBlobsClient {
-  private getFileStore() {
-    return getStore("link-album-files");
+  private async getFileStore() {
+    const getStore = await initNetlifyBlobs();
+    return getStore({
+      name: 'link-album-files',
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_BLOBS_TOKEN
+    });
   }
 
   async createFile({
@@ -45,7 +59,7 @@ class NetlifyBlobsStorageClient implements NetlifyBlobsClient {
     isBase64?: boolean;
   }): Promise<boolean> {
     try {
-      const fileStore = this.getFileStore();
+      const fileStore = await this.getFileStore();
       
       let fileData: ArrayBuffer;
       let metadata: Record<string, any> = {
@@ -96,7 +110,7 @@ class NetlifyBlobsStorageClient implements NetlifyBlobsClient {
     status: number;
   }> {
     try {
-      const fileStore = this.getFileStore();
+      const fileStore = await this.getFileStore();
       
       const blob = await fileStore.get(filePath, { type: "arrayBuffer" });
       
@@ -146,7 +160,7 @@ class NetlifyBlobsStorageClient implements NetlifyBlobsClient {
 
   async removeFile({ filePath }: { filePath: string }): Promise<void> {
     try {
-      const fileStore = this.getFileStore();
+      const fileStore = await this.getFileStore();
       await fileStore.delete(filePath);
     } catch (error) {
       console.error("Error removing file:", error);
@@ -156,7 +170,7 @@ class NetlifyBlobsStorageClient implements NetlifyBlobsClient {
 
   async moveFile(from: string, to: string): Promise<void> {
     try {
-      const fileStore = this.getFileStore();
+      const fileStore = await this.getFileStore();
       
       // Get the file data and metadata
       const fileData = await fileStore.get(from, { type: "arrayBuffer" });
@@ -184,7 +198,7 @@ class NetlifyBlobsStorageClient implements NetlifyBlobsClient {
 
   async removeFolder({ filePath }: { filePath: string }): Promise<void> {
     try {
-      const fileStore = this.getFileStore();
+      const fileStore = await this.getFileStore();
       
       // List all files with the prefix and delete them
       // Note: Netlify Blobs doesn't have a native "list" operation

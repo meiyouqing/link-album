@@ -37,6 +37,7 @@ export default function LinkActions({
 
   const [editLinkModal, setEditLinkModal] = useState(false);
   const [deleteLinkModal, setDeleteLinkModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const deleteLink = useDeleteLink();
 
@@ -143,11 +144,15 @@ export default function LinkActions({
                     console.log(e.shiftKey);
                     e.shiftKey
                       ? (async () => {
+                          if (isDeleting) return; // Prevent double-deletion
+                          
+                          setIsDeleting(true);
                           const load = toast.loading(t("deleting"));
 
                           await deleteLink.mutateAsync(link.id as number, {
                             onSettled: (data, error) => {
                               toast.dismiss(load);
+                              setIsDeleting(false);
 
                               if (error) {
                                 toast.error(error.message);

@@ -207,6 +207,11 @@ const useDeleteLink = () => {
 
       const data = await response.json();
 
+      // Handle 404 as success since the goal was to delete the link
+      if (response.status === 404) {
+        return { id, message: "Link was already deleted" };
+      }
+
       if (!response.ok) throw new Error(data.response);
 
       return data.response;
