@@ -2,10 +2,9 @@ import { PrismaClient } from '@prisma/client';
 import { getStore } from '@netlify/blobs';
 
 // Initialize Netlify Blobs store
+// When running in Netlify Functions, siteID and token are auto-populated
 const fileStore = getStore({
-  name: 'link-album-files',
-  siteID: process.env.NETLIFY_SITE_ID,
-  token: process.env.NETLIFY_BLOBS_TOKEN
+  name: 'link-album-files'
 });
 
 // Initialize Prisma client

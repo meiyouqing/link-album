@@ -8,11 +8,10 @@ async function initBlobs() {
     const { getStore: importedGetStore } = await import('@netlify/blobs');
     getStore = importedGetStore;
   }
+  // When running in Netlify Functions, siteID and token are auto-populated
   return getStore({
-    name: 'link-album-files',
-    siteID: process.env.NETLIFY_SITE_ID,
-    token: process.env.NETLIFY_BLOBS_TOKEN
-  }); // Use same store name as /functions
+    name: 'link-album-files'
+  });
 }
 
 const prisma = new PrismaClient();

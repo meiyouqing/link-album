@@ -11,7 +11,10 @@ async function initNetlifyBlobs() {
 
 // Storage configuration
 const USE_NETLIFY_BLOBS = process.env.USE_NETLIFY_BLOBS === "true";
-const NETLIFY_SITE_ID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+// In Netlify Functions, NETLIFY_SITE_ID is auto-populated
+const isNetlifyEnvironment = process.env.NETLIFY === "true" || 
+                           !!process.env.NETLIFY_SITE_ID || 
+                           !!process.env.SITE_ID;
 
 interface NetlifyBlobsClient {
   createFile: ({
@@ -42,10 +45,9 @@ interface NetlifyBlobsClient {
 class NetlifyBlobsStorageClient implements NetlifyBlobsClient {
   private async getFileStore() {
     const getStore = await initNetlifyBlobs();
+    // When running in Netlify Functions, siteID and token are auto-populated
     return getStore({
-      name: 'link-album-files',
-      siteID: process.env.NETLIFY_SITE_ID,
-      token: process.env.NETLIFY_BLOBS_TOKEN
+      name: 'link-album-files'
     });
   }
 
@@ -216,7 +218,7 @@ export const netlifyBlobsClient = new NetlifyBlobsStorageClient();
 
 // Helper function to check if Netlify Blobs should be used
 export const shouldUseNetlifyBlobs = (): boolean => {
-  return USE_NETLIFY_BLOBS && !!NETLIFY_SITE_ID;
+  return USE_NETLIFY_BLOBS && isNetlifyEnvironment;
 };
 
 export default netlifyBlobsClient;
