@@ -2,7 +2,7 @@ export default async function removeFile({ filePath }: { filePath: string }) {
   try {
     const baseUrl = process.env.NODE_ENV === 'development' 
       ? 'http://localhost:8888' 
-      : '';
+      : 'https://linkalbum.netlify.app';
     await fetch(`${baseUrl}/api/blobs/delete?filePath=${encodeURIComponent(filePath)}`, {
       method: 'DELETE'
     });

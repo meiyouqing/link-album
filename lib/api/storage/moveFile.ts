@@ -2,7 +2,7 @@ export default async function moveFile(from: string, to: string) {
   try {
     const baseUrl = process.env.NODE_ENV === 'development' 
       ? 'http://localhost:8888' 
-      : '';
+      : 'https://linkalbum.netlify.app';
     await fetch(`${baseUrl}/api/blobs/move`, {
       method: 'POST',
       headers: {

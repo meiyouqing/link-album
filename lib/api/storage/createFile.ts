@@ -10,7 +10,7 @@ export default async function createFile({
   try {
     const baseUrl = process.env.NODE_ENV === 'development' 
       ? 'http://localhost:8888' 
-      : '';
+      : 'https://linkalbum.netlify.app';
     const response = await fetch(`${baseUrl}/api/blobs/create`, {
       method: 'POST',
       headers: {
