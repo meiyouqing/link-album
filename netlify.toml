@@ -64,3 +64,24 @@
   from = "/api/process-rss"
   to = "/.netlify/functions/process-rss"
   status = 200
+
+# Blob operation redirects
+[[redirects]]
+  from = "/api/blobs/create"
+  to = "/.netlify/functions/blob-create"
+  status = 200
+
+[[redirects]]
+  from = "/api/blobs/read"
+  to = "/.netlify/functions/blob-read"
+  status = 200
+
+[[redirects]]
+  from = "/api/blobs/delete"
+  to = "/.netlify/functions/blob-delete"
+  status = 200
+
+[[redirects]]
+  from = "/api/blobs/move"
+  to = "/.netlify/functions/blob-move"
+  status = 200

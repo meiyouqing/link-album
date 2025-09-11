@@ -1,9 +1,3 @@
-import { PutObjectCommand, PutObjectCommandInput } from "@aws-sdk/client-s3";
-import fs from "fs";
-import path from "path";
-import s3Client from "./s3Client";
-import { netlifyBlobsClient, shouldUseNetlifyBlobs } from "./netlifyBlobsClient";
-
 export default async function createFile({
   filePath,
   data,
@@ -12,42 +6,36 @@ export default async function createFile({
   filePath: string;
   data: Buffer | string;
   isBase64?: boolean;
-}) {
-  // Use Netlify Blobs if configured
-  if (shouldUseNetlifyBlobs()) {
-    return await netlifyBlobsClient.createFile({ filePath, data, isBase64 });
-  }
-
-  // Original implementation for S3 or filesystem
-  if (s3Client) {
-    const bucketParams: PutObjectCommandInput = {
-      Bucket: process.env.SPACES_BUCKET_NAME,
-      Key: filePath,
-      Body: isBase64 ? Buffer.from(data as string, "base64") : data,
-    };
-
-    try {
-      await s3Client.send(new PutObjectCommand(bucketParams));
-
-      return true;
-    } catch (err) {
-      console.log("Error", err);
-      return false;
-    }
-  } else {
-    const storagePath = process.env.STORAGE_FOLDER || "data";
-    const creationPath = path.join(process.cwd(), storagePath + "/" + filePath);
-
-    // Ensure directory exists
-    const dir = path.dirname(creationPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
-    fs.writeFile(creationPath, data as any, isBase64 ? "base64" : {}, function (err) {
-      if (err) console.log(err);
+}): Promise<boolean> {
+  try {
+    const baseUrl = process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:8888' 
+      : '';
+    const response = await fetch(`${baseUrl}/api/blobs/create`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        filePath,
+        data: data instanceof Buffer ? Array.from(data) : data,
+        isBase64,
+        metadata: {
+          uploadedAt: new Date().toISOString()
+        }
+      })
     });
 
-    return true;
+    const result = await response.json();
+    
+    if (!response.ok) {
+      console.error('Error creating file via Netlify Function:', result);
+      return false;
+    }
+    
+    return result.success;
+  } catch (error) {
+    console.error('Error calling blob create function:', error);
+    return false;
   }
 }

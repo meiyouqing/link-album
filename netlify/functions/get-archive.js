@@ -10,7 +10,12 @@ async function initBlobs() {
   }
   // When running in Netlify Functions, siteID and token are auto-populated
   return getStore({
-    name: 'link-album-files'
+    name: 'link-album-files',
+    // For development, provide explicit site ID and token from environment
+    ...(process.env.NETLIFY_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN ? {
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_BLOBS_TOKEN
+    } : {})
   });
 }
 

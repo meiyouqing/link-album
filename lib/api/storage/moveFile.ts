@@ -1,45 +1,20 @@
-import fs from "fs";
-import path from "path";
-import s3Client from "./s3Client";
-import removeFile from "./removeFile";
-import { netlifyBlobsClient, shouldUseNetlifyBlobs } from "./netlifyBlobsClient";
-
 export default async function moveFile(from: string, to: string) {
-  // Use Netlify Blobs if configured
-  if (shouldUseNetlifyBlobs()) {
-    await netlifyBlobsClient.moveFile(from, to);
-    return;
-  }
-
-  // Original implementation for S3 or filesystem
-  if (s3Client) {
-    const Bucket = process.env.SPACES_BUCKET_NAME;
-
-    const copyParams = {
-      Bucket: Bucket,
-      CopySource: `/${Bucket}/${from}`,
-      Key: to,
-    };
-
-    try {
-      s3Client.copyObject(copyParams, async (err: unknown) => {
-        if (err) {
-          console.error("Error copying the object:", err);
-        } else {
-          await removeFile({ filePath: from });
-        }
-      });
-    } catch (err) {
-      console.log("Error:", err);
-    }
-  } else {
-    const storagePath = process.env.STORAGE_FOLDER || "data";
-
-    const directory = (file: string) =>
-      path.join(process.cwd(), storagePath + "/" + file);
-
-    fs.rename(directory(from), directory(to), (err) => {
-      if (err) console.log("Error copying file:", err);
+  try {
+    const baseUrl = process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:8888' 
+      : '';
+    await fetch(`${baseUrl}/api/blobs/move`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        fromPath: from,
+        toPath: to
+      })
     });
+  } catch (error) {
+    console.error('Error calling blob move function:', error);
+    // Don't throw - match original behavior
   }
 }
