@@ -1,15 +1,12 @@
 import { getStore } from '@netlify/blobs';
 
 // Initialize Netlify Blobs store
-const fileStore = getStore({
-  name: 'link-album-files',
-  // Only provide siteID and token in development/local environment
-  // In production, Netlify automatically provides these values
-  ...(process.env.NODE_ENV === 'development' && process.env.NETLIFY_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN ? {
-    siteID: process.env.NETLIFY_SITE_ID,
-    token: process.env.NETLIFY_BLOBS_TOKEN
-  } : {})
-});
+const fileStore = process.env.NODE_ENV === 'development' 
+  ? getStore('link-album-files', {
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_BLOBS_TOKEN
+    })
+  : getStore('link-album-files');
 
 export const handler = async (event, context) => {
   const corsHeaders = {
