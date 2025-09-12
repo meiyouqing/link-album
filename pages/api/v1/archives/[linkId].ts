@@ -1,16 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import readFile from "@/lib/api/storage/readFile";
+import { readFile } from "@/lib/api/blobOperations";
 import { prisma } from "@/lib/api/db";
 import { ArchivedFormat } from "@/types/global";
 import verifyUser from "@/lib/api/verifyUser";
 import getPermission from "@/lib/api/getPermission";
 import { UsersAndCollections } from "@prisma/client";
 import formidable from "formidable";
-import createFile from "@/lib/api/storage/createFile";
+import { createFile } from "@/lib/api/blobOperations";
 import fs from "fs";
 import verifyToken from "@/lib/api/verifyToken";
 import generatePreview from "@/lib/api/generatePreview";
-import createFolder from "@/lib/api/storage/createFolder";
 import { UploadFileSchema } from "@/lib/shared/schemaValidation";
 
 // Helper function to get the correct file path from database
@@ -293,10 +292,7 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
 
         if (linkStillExists && isImage) {
           const collectionId = collectionPermissions.id;
-          createFolder({
-            filePath: `archives/preview/${collectionId}`,
-          });
-
+          // Note: Netlify Blobs doesn't require folder creation
           generatePreview(fileBuffer, collectionId, linkId);
         }
 
@@ -402,10 +398,7 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
 
         if (linkStillExists) {
           const collectionId = collectionPermissions.id;
-          createFolder({
-            filePath: `archives/preview/${collectionId}`,
-          });
-
+          // Note: Netlify Blobs doesn't require folder creation
           await generatePreview(fileBuffer, collectionId, linkId);
         }
 

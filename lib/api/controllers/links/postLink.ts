@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/api/db";
 import fetchTitleAndHeaders from "@/lib/shared/fetchTitleAndHeaders";
-import createFolder from "@/lib/api/storage/createFolder";
+import { NextApiRequest, NextApiResponse } from "next";
+import { getServerSession } from "next-auth/next";
+import { createFolder } from "@/lib/api/blobOperations";
 import setCollection from "../../setCollection";
 import {
   PostLinkSchema,

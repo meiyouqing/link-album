@@ -21,12 +21,18 @@
   - Copies files to new location and removes from old location
   - Preserves metadata during move operations
 
-### 2. Storage Abstraction Layer
-- **Netlify Blobs Client** (`lib/api/storage/netlifyBlobsClient.ts`)
-  - Complete implementation matching existing storage interface
+### 2. Hybrid Architecture Implementation
+- **Blob Operations Client** (`lib/api/blobOperations.ts`)
+  - Unified interface for all file operations
+  - Calls Netlify Functions via HTTP from Next.js environment
   - Handles Buffer/string/base64 data conversions
-  - Automatic content-type detection from file extensions
   - Comprehensive error handling
+
+### 3. Deprecated Storage Layer (Moved to `_deprecated/`)
+- **Old Storage Functions** (`_deprecated/storage-deprecated/`)
+  - Previous implementation with incorrect API endpoints
+  - Called `/api/blobs/*` instead of `/.netlify/functions/blob-*`
+  - Preserved for reference but no longer used
 
 ### 3. Updated Existing Storage Functions
 - **createFile.ts** - Now supports Netlify Blobs as primary storage option

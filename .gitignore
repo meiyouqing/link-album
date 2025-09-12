@@ -5,6 +5,8 @@
 /.pnp
 .pnp.js
 
+/_deprecated
+
 # testing
 /coverage
 

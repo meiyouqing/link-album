@@ -1,9 +1,8 @@
 import { prisma } from "@/lib/api/db";
 import bcrypt from "bcrypt";
-import removeFolder from "@/lib/api/storage/removeFolder";
+import { removeFolder, removeFile } from "@/lib/api/blobOperations";
 import Stripe from "stripe";
 import { DeleteUserBody } from "@/types/global";
-import removeFile from "@/lib/api/storage/removeFile";
 import updateSeats from "@/lib/api/stripe/updateSeats";
 
 export default async function deleteUserById(

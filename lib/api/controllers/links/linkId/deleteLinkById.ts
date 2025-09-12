@@ -1,32 +1,44 @@
 import { prisma } from "@/lib/api/db";
-import { Link, UsersAndCollections } from "@prisma/client";
-import getPermission from "@/lib/api/getPermission";
+import { Link } from "@prisma/client";
 import { removeFiles } from "@/lib/api/manageLinkFiles";
 
 export default async function deleteLink(userId: number, linkId: number) {
   if (!linkId) return { response: "Please choose a valid link.", status: 401 };
 
-  // First check if the link exists at all
-  const linkExists = await prisma.link.findUnique({
+  // First get the link with its collection information directly
+  const linkWithCollection = await prisma.link.findUnique({
     where: { id: linkId },
-    select: { id: true }
+    select: { 
+      id: true, 
+      collectionId: true,
+      collection: {
+        select: {
+          id: true,
+          ownerId: true,
+          members: {
+            select: {
+              userId: true,
+              canDelete: true
+            }
+          }
+        }
+      }
+    }
   });
 
-  if (!linkExists) {
+  if (!linkWithCollection) {
     return { response: "Link not found or already deleted.", status: 404 };
   }
 
-  const collectionIsAccessible = await getPermission({ userId, linkId });
-
-  const memberHasAccess = collectionIsAccessible?.members.some(
-    (e: UsersAndCollections) => e.userId === userId && e.canDelete
+  // Check permissions directly on the collection
+  const collection = linkWithCollection.collection;
+  const memberHasAccess = collection.members.some(
+    (member) => member.userId === userId && member.canDelete
   );
 
-  if (
-    !collectionIsAccessible ||
-    !(collectionIsAccessible?.ownerId === userId || memberHasAccess)
-  )
+  if (!(collection.ownerId === userId || memberHasAccess)) {
     return { response: "Collection is not accessible.", status: 401 };
+  }
 
   try {
     const deleteLink: Link = await prisma.link.delete({
@@ -35,7 +47,7 @@ export default async function deleteLink(userId: number, linkId: number) {
       },
     });
 
-    removeFiles(linkId, collectionIsAccessible.id);
+    removeFiles(linkId, collection.id);
 
     return { response: deleteLink, status: 200 };
   } catch (error) {

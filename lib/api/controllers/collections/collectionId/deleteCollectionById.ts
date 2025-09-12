@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/api/db";
 import getPermission from "@/lib/api/getPermission";
 import { UsersAndCollections } from "@prisma/client";
-import removeFolder from "@/lib/api/storage/removeFolder";
+import { NextApiRequest, NextApiResponse } from "next";
+import { removeFolder } from "@/lib/api/blobOperations";
 
 export default async function deleteCollection(
   userId: number,

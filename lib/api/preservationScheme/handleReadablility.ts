@@ -2,7 +2,7 @@ import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import DOMPurify from "dompurify";
 import { prisma } from "../db";
-import createFile from "../storage/createFile";
+import { createFile } from "../blobOperations";
 import { Link } from "@prisma/client";
 
 const handleReadablility = async (content: string, link: Link) => {

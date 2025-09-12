@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/api/db";
-import createFolder from "@/lib/api/storage/createFolder";
+import { NextApiRequest, NextApiResponse } from "next";
+import { createFolder } from "@/lib/api/blobOperations";
 import { JSDOM } from "jsdom";
 import { parse, Node, Element, TextNode } from "himalaya";
 import { hasPassedLimit } from "../../verifyCapacity";

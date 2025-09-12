@@ -1,6 +1,6 @@
 import { Link } from "@prisma/client";
 import { prisma } from "../db";
-import createFile from "../storage/createFile";
+import { createFile } from "../blobOperations";
 import generatePreview from "../generatePreview";
 
 const imageHandler = async ({ url, id }: Link, extension: string) => {

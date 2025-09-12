@@ -1,22 +1,33 @@
 # Netlify Blobs Refactoring Summary
 
+## Final Architecture (Post-Cleanup)
+
+### Current Active Implementation
+- **`lib/api/blobOperations.ts`** - Single source of truth for all blob operations
+- **Netlify Functions**: `blob-create.mjs`, `blob-read.mjs`, `blob-delete.mjs`, `blob-move.mjs`
+- **Next.js API Routes** - Handle database operations only
+- **Frontend** - Calls Next.js API routes, which use blobOperations.ts for file operations
+
+### Deprecated/Cleaned Up
+- **`_deprecated/storage-deprecated/`** - Old storage functions with incorrect endpoints
+  - These called `/api/blobs/*` instead of correct `/.netlify/functions/blob-*`
+  - Moved to `_deprecated` folder to maintain history
+
 ## What Was Changed
 
 ### 1. Created New Netlify Functions for Blob Operations
-- **`netlify/functions/blob-create.js`** - Handles file creation/upload
-- **`netlify/functions/blob-read.js`** - Handles file reading
-- **`netlify/functions/blob-delete.js`** - Handles file deletion
-- **`netlify/functions/blob-move.js`** - Handles file moving
+- **`netlify/functions/blob-create.mjs`** - Handles file creation/upload
+- **`netlify/functions/blob-read.mjs`** - Handles file reading
+- **`netlify/functions/blob-delete.mjs`** - Handles file deletion
+- **`netlify/functions/blob-move.mjs`** - Handles file moving
 
-### 2. Updated Storage Functions to Use Netlify Functions
-Instead of calling the `netlifyBlobsClient` directly (which had issues outside Netlify Functions environment), all storage functions now make HTTP requests to the dedicated Netlify Functions:
+### 2. Consolidated Storage Operations
+Instead of multiple storage functions with duplicate logic, created a single `blobOperations.ts` that:
 
-- **`lib/api/storage/createFile.ts`** - Now calls `/api/blobs/create`
-- **`lib/api/storage/readFile.ts`** - Now calls `/api/blobs/read`
-- **`lib/api/storage/removeFile.ts`** - Now calls `/api/blobs/delete`
-- **`lib/api/storage/moveFile.ts`** - Now calls `/api/blobs/move`
-- **`lib/api/storage/createFolder.ts`** - No-op for Netlify Blobs
-- **`lib/api/storage/removeFolder.ts`** - Not implemented (would need batch operations)
+- **`createFile()`** - Calls `/.netlify/functions/blob-create`
+- **`readFile()`** - Calls `/.netlify/functions/blob-read`
+- **`removeFile()`** - Calls `/.netlify/functions/blob-delete`
+- **`moveFile()`** - Calls `/.netlify/functions/blob-move`
 
 ### 3. Updated netlify.toml
 Added redirects for the new blob API endpoints:

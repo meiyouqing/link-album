@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/api/db";
-import createFolder from "@/lib/api/storage/createFolder";
+import { NextApiRequest, NextApiResponse } from "next";
+import { createFolder } from "@/lib/api/blobOperations";
 import { hasPassedLimit } from "../../verifyCapacity";
 
 type WallabagBackup = {

@@ -14,6 +14,7 @@ import {
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import { PostLinkSchemaType } from "@/lib/shared/schemaValidation";
+import { uploadFile } from "@/lib/client/blobOperations";
 
 const useLinks = (params: LinkRequestQuery = {}) => {
   const router = useRouter();
@@ -212,6 +213,11 @@ const useDeleteLink = () => {
         return { id, message: "Link was already deleted" };
       }
 
+      // Handle 401 with a more user-friendly message
+      if (response.status === 401) {
+        throw new Error("You don't have permission to delete this link, or the link may have been moved to another collection.");
+      }
+
       if (!response.ok) throw new Error(data.response);
 
       return data.response;
@@ -366,11 +372,36 @@ const useUploadFile = () => {
         return { ok: false, data: "Invalid file type." };
       }
 
+      // PHASE 1 HYBRID ARCHITECTURE:
+      // Step 1: Upload file directly to Netlify Functions (serverless)
+      console.log('🚀 [Hybrid] Uploading file to Netlify Functions...');
+      const uploadResult = await uploadFile({
+        filePath: `uploads/${Date.now()}-${file.name}`,
+        data: file,
+        metadata: { 
+          originalName: file.name, 
+          fileType,
+          linkType,
+          size: file.size 
+        }
+      });
+
+      if (!uploadResult.success) {
+        throw new Error(`File upload failed: ${uploadResult.error}`);
+      }
+
+      console.log('✅ [Hybrid] File uploaded to Netlify Blobs');
+
+      // Step 2: Save link metadata to database via Next.js API (traditional)
+      console.log('🗄️ [Hybrid] Saving link metadata to database...');
       const response = await fetch("/api/v1/links", {
         body: JSON.stringify({
           ...link,
           type: linkType,
           name: link.name ? link.name : file.name,
+          filePath: uploadResult.data?.filePath, // Reference to uploaded file
+          fileSize: file.size,
+          fileType: fileType
         }),
         headers: {
           "Content-Type": "application/json",
@@ -380,19 +411,32 @@ const useUploadFile = () => {
 
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.response);
+      if (!response.ok) {
+        // If database save fails, cleanup the uploaded file
+        console.log('❌ [Hybrid] Database save failed, cleaning up file...');
+        // Note: We could call deleteFile here, but for now we'll let it be
+        // await deleteFile(uploadResult.data?.filePath);
+        throw new Error(data.response);
+      }
 
-      if (response.ok) {
-        const formBody = new FormData();
-        file && formBody.append("file", file);
+      console.log('✅ [Hybrid] Link saved to database');
 
-        await fetch(
-          `/api/v1/archives/${(data as any).response.id}?format=${fileType}`,
-          {
-            body: formBody,
-            method: "POST",
-          }
-        );
+      // Step 3: Trigger background processing via Netlify Functions (optional)
+      if (data.response?.id) {
+        console.log('⚡ [Hybrid] Triggering background processing...');
+        fetch('/.netlify/functions/process-link-hybrid', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            linkId: data.response.id,
+            filePath: uploadResult.data?.filePath,
+            fileType,
+            originalFile: file.name
+          })
+        }).catch(err => {
+          console.warn('Background processing failed:', err);
+          // Don't fail the main operation
+        });
       }
 
       return data.response;

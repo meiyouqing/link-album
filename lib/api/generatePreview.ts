@@ -1,6 +1,6 @@
 import Jimp from "jimp";
 import { prisma } from "./db";
-import createFile from "./storage/createFile";
+import { createFile } from "./blobOperations";
 
 const generatePreview = async (
   buffer: Buffer,
