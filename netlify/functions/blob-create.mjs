@@ -3,8 +3,9 @@ import { getStore } from '@netlify/blobs';
 // Initialize Netlify Blobs store
 const fileStore = getStore({
   name: 'link-album-files',
-  // For development, provide explicit site ID and token from environment
-  ...(process.env.NETLIFY_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN ? {
+  // Only provide siteID and token in development/local environment
+  // In production, Netlify automatically provides these values
+  ...(process.env.NODE_ENV === 'development' && process.env.NETLIFY_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN ? {
     siteID: process.env.NETLIFY_SITE_ID,
     token: process.env.NETLIFY_BLOBS_TOKEN
   } : {})
