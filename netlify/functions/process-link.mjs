@@ -5,17 +5,14 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-import { getStore, connectLambda } from "@netlify/blobs";
+import { getStore } from "@netlify/blobs";
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
 
 // Main handler for background processing
 export default async function handler(request) {
-  // Initialize Lambda compatibility mode
-  connectLambda(request);
-  
-  // Get store after connecting Lambda
+  // For web-standard functions, use environment-based configuration
   const fileStore = getStore('link-album-files');
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -60,7 +57,7 @@ export default async function handler(request) {
 
       if (link.url) {
         console.log(`🌐 [Background] Processing URL: ${link.url}`);
-        await processUrl(link.url, linkId, results);
+        await processUrl(link.url, linkId, results, fileStore);
       } else {
         console.log(`⚠️ [Background] Link ${linkId} has no URL to process`);
         results.errors.push('No URL to process');
@@ -73,7 +70,7 @@ export default async function handler(request) {
 
       // Process URL if provided (for link archiving)
       if (url) {
-        await processUrl(url, linkId, results);
+        await processUrl(url, linkId, results, fileStore);
       }
     }
 
@@ -141,7 +138,7 @@ async function processUploadedFile(filePath, fileType, linkId, results) {
 }
 
 // Process URLs (for archiving, screenshots, etc.)
-async function processUrl(url, linkId, results) {
+async function processUrl(url, linkId, results, fileStore) {
   try {
     console.log(`🌐 Processing URL: ${url}`);
 
