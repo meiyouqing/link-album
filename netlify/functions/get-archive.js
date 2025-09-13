@@ -1,20 +1,20 @@
 const { PrismaClient } = require('@prisma/client');
 
 // Use dynamic import for @netlify/blobs since it's an ES module
-let getStore;
+let getStore, connectLambda;
 
-async function initBlobs() {
+async function initBlobs(event) {
   if (!getStore) {
-    const { getStore: importedGetStore } = await import('@netlify/blobs');
-    getStore = importedGetStore;
+    const blobsModule = await import('@netlify/blobs');
+    getStore = blobsModule.getStore;
+    connectLambda = blobsModule.connectLambda;
   }
-  // When running in Netlify Functions, siteID and token are auto-populated
-  return process.env.NODE_ENV === 'development' 
-    ? getStore('link-album-files', {
-        siteID: process.env.NETLIFY_SITE_ID,
-        token: process.env.NETLIFY_BLOBS_TOKEN
-      })
-    : getStore('link-album-files');
+  
+  // Initialize Lambda compatibility mode
+  connectLambda(event);
+  
+  // Get store after connecting Lambda
+  return getStore('link-album-files');
 }
 
 const prisma = new PrismaClient();
@@ -125,7 +125,7 @@ exports.handler = async (event, context) => {
     console.log(`Retrieving file from Blobs: ${filePath}`);
 
     // Get the Netlify Blobs store
-    const fileStore = await initBlobs();
+    const fileStore = await initBlobs(event);
     
     // Get file from Netlify Blobs
     const fileData = await fileStore.get(filePath, { type: 'arrayBuffer' });

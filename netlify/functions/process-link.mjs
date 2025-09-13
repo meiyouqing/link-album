@@ -5,21 +5,18 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-import { getStore } from "@netlify/blobs";
-
-// Initialize Netlify Blobs store
-const fileStore = process.env.NODE_ENV === 'development' 
-  ? getStore('link-album-files', {
-      siteID: process.env.NETLIFY_SITE_ID,
-      token: process.env.NETLIFY_BLOBS_TOKEN
-    })
-  : getStore('link-album-files');
+import { getStore, connectLambda } from "@netlify/blobs";
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
 
 // Main handler for background processing
 export default async function handler(request) {
+  // Initialize Lambda compatibility mode
+  connectLambda(request);
+  
+  // Get store after connecting Lambda
+  const fileStore = getStore('link-album-files');
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }

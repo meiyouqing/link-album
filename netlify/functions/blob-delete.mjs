@@ -1,14 +1,12 @@
-import { getStore } from '@netlify/blobs';
-
-// Initialize Netlify Blobs store
-const fileStore = process.env.NODE_ENV === 'development' 
-  ? getStore('link-album-files', {
-      siteID: process.env.NETLIFY_SITE_ID,
-      token: process.env.NETLIFY_BLOBS_TOKEN
-    })
-  : getStore('link-album-files');
+import { getStore, connectLambda } from '@netlify/blobs';
 
 export const handler = async (event, context) => {
+  // Initialize Lambda compatibility mode
+  connectLambda(event);
+  
+  // Get store after connecting Lambda
+  const fileStore = getStore('link-album-files');
+
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
